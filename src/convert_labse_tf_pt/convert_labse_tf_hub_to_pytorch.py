@@ -13,7 +13,9 @@
 # limitations under the License.
 
 """
-This script can be used to convert a head-less TF2.x Bert model to PyTorch, as published on the official GitHub:
+This script can be used to convert a head-less TF2.x Bert model to PyTorch, as published
+on the official GitHub:
+
 https://github.com/tensorflow/models/tree/master/official/nlp/bert
 TF2.x uses different variable names from the original BERT (TF 1.4) implementation. The script re-maps the TF2.x Bert
 weight names to the original names, so the model can be imported with Huggingface/transformer.
@@ -22,16 +24,26 @@ You may adapt this script to include classification/MLM/NSP/etc. heads.
 import argparse
 import os
 import re
+from logging import INFO, getLogger
 
 import tensorflow as tf
 import torch
+from tensorflow_hub import load
+from transformers import BertConfig, BertModel, BertTokenizerFast
 
-from ...utils import logging
-from . import BertConfig, BertModel
+logger = getLogger(__name__)
+logger.setLevel(INFO)
 
 
-logging.set_verbosity_info()
-logger = logging.get_logger(__name__)
+def load_tf_model():
+    return load("https://tfhub.dev/google/LaBSE/1")
+
+
+def get_labse_tokenizer(tf_model) -> BertTokenizerFast:
+    return BertTokenizerFast(
+        tf_model.vocab_file.asset_path.numpy(),
+        do_lower_case=tf_model.do_lower_case.numpy().item(),
+    )
 
 
 def load_tf2_weights_in_bert(model, tf_checkpoint_path, config):
@@ -222,6 +234,10 @@ def convert_tf2_checkpoint_to_pytorch(
     # Save pytorch-model
     logger.info(f"Saving PyTorch model to {pytorch_dump_path}...")
     torch.save(model.state_dict(), pytorch_dump_path)
+
+
+def convert_tf2_hub_model_to_pytorch():
+    pass
 
 
 if __name__ == "__main__":

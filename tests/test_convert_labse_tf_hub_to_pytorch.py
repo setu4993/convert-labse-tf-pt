@@ -6,8 +6,8 @@ from transformers import BertTokenizerFast
 
 from convert_labse_tf_pt import (
     convert_tf2_hub_model_to_pytorch,
-    labse_tokenizer,
-    tf_model,
+    get_labse_tokenizer,
+    load_tf_model,
 )
 
 SIMILAR_SENTENCES = ["Hi, how are you?", "Hello, how are you doing?"]
@@ -16,7 +16,7 @@ TOLERANCE = 0.1
 
 
 def test_convert_tokenizer():
-    hub_model = tf_model()
+    hub_model = load_tf_model()
 
     tf_tokenizer = FullTokenizer(
         hub_model.vocab_file.asset_path.numpy(), hub_model.do_lower_case.numpy()
@@ -25,7 +25,7 @@ def test_convert_tokenizer():
         tf_tokenizer.tokenize(SIMILAR_SENTENCES[0])
     )
 
-    hf_tokenizer = labse_tokenizer(hub_model)
+    hf_tokenizer = get_labse_tokenizer(hub_model)
     hf_tokenized = hf_tokenizer(SIMILAR_SENTENCES[0], add_special_tokens=False)
     assert tf_tokenized == hf_tokenized.input_ids
 
