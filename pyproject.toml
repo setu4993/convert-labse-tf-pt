@@ -19,6 +19,7 @@ ipython = "^7.19.0"
 ipykernel = "^5.4.2"
 bert-for-tf2 = "^0.14.7"
 isort = "^5.7.0"
+pytest-pythonpath = "^0.7.3"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -28,3 +29,6 @@ build-backend = "poetry.core.masonry.api"
 profile = "black"
 sections = ["FUTURE", "STDLIB", "THIRDPARTY", "ML", "FIRSTPARTY", "LOCALFOLDER"]
 known_ml=["torch", "tensorflow", "tensorflow_hub", "transformers", "bert"]
+
+[tool.pytest.ini_options]
+python_paths = ["src/"]
