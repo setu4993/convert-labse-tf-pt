@@ -73,7 +73,7 @@ def save_labse_models(
         tf_model.save_pretrained(tf_output_path)
 
 
-def load_tf2_weights_in_labse(model, tf_model):
+def load_weights(model, tf_model):  # noqa: C901
     # Convert layers.
     logger.info("Converting weights...")
     for var in tf_model.variables:
@@ -212,7 +212,7 @@ def convert_tf2_hub_model_to_pytorch(
     model = get_labse_model(labse_config)
 
     logger.info("Loading weights from TF SavedModel.")
-    model = load_tf2_weights_in_labse(model, tf_model)
+    model = load_weights(model, tf_model)
 
     logger.info("Initializing LaBSE tokenizer.")
     tokenizer = get_labse_tokenizer(tf_model)

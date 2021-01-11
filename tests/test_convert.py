@@ -1,5 +1,4 @@
 from numpy import allclose
-from pytest import fixture
 
 from bert.tokenization.bert_tokenization import FullTokenizer
 from torch import no_grad
