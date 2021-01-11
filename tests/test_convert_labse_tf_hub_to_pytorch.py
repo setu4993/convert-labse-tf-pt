@@ -2,6 +2,7 @@ from numpy import allclose
 from pytest import fixture
 
 from bert.tokenization.bert_tokenization import FullTokenizer
+from torch import no_grad
 from transformers import BertTokenizerFast
 
 from convert_labse_tf_pt import (
@@ -30,19 +31,23 @@ def test_convert_tokenizer():
     assert tf_tokenized == hf_tokenized.input_ids
 
 
-def test_convert_model(tf_model, labse_tokenizer):
+def test_convert_model():
+    hub_model = load_tf_model()
+    labse_tokenizer = get_labse_tokenizer(hub_model)
     pt_tokenized = labse_tokenizer(
-        SIMILAR_SENTENCES, return_tensors="pt", **TOKENIZER_ATTRIBUTES
+        SIMILAR_SENTENCES[0], return_tensors="pt", **TOKENIZER_ATTRIBUTES
     )
     model = convert_tf2_hub_model_to_pytorch()
+    model = model.eval()
 
-    pt_labse_output = model(**pt_tokenized)
+    with no_grad():
+        pt_labse_output = model(**pt_tokenized)
     pt_output = pt_labse_output.pooler_output
 
     tf_tokenized = labse_tokenizer(
-        SIMILAR_SENTENCES, return_tensors="tf", **TOKENIZER_ATTRIBUTES
+        SIMILAR_SENTENCES[0], return_tensors="tf", **TOKENIZER_ATTRIBUTES
     )
-    tf_labse_output = tf_model(
+    tf_labse_output = hub_model(
         [
             tf_tokenized.input_ids,
             tf_tokenized.attention_mask,
