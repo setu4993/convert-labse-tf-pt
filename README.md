@@ -1,9 +1,9 @@
 # Convert LaBSE from TensorFlow to PyTorch
 
-Model: [HuggingFace's model hub](https://huggingface.co/setu4993/LaBSE)
-Paper: [arXiv](https://arxiv.org/abs/2007.01852).
-Original model: [TensorFlow Hub](https://tfhub.dev/google/LaBSE/1).
-Blog post: [Google AI Blog](https://ai.googleblog.com/2020/08/language-agnostic-bert-sentence.html).
+- Model: [HuggingFace's model hub](https://huggingface.co/setu4993/LaBSE).
+- Paper: [arXiv](https://arxiv.org/abs/2007.01852).
+- Original model: [TensorFlow Hub](https://tfhub.dev/google/LaBSE/1).
+- Blog post: [Google AI Blog](https://ai.googleblog.com/2020/08/language-agnostic-bert-sentence.html).
 
 ## License
 
