@@ -37,10 +37,14 @@ def get_labse_model(labse_config: PATH = None) -> BertModel:
 
 
 def get_labse_tokenizer(tf_model) -> BertTokenizerFast:
-    return BertTokenizerFast(
+    tokenizer = BertTokenizerFast(
         tf_model.vocab_file.asset_path.numpy(),
         do_lower_case=tf_model.do_lower_case.numpy().item(),
     )
+    # Use the length from the positional_embeddings layer.
+    # Layer name: "position_embedding/embeddings:0"
+    tokenizer.model_max_length = tf_model.variables[1].shape[0]
+    return tokenizer
 
 
 def save_labse_models(
