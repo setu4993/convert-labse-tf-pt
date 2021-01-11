@@ -46,15 +46,15 @@ def get_labse_tokenizer(tf_model) -> BertTokenizerFast:
     )
 
 
-def load_tf2_weights_in_bert(model, tf_checkpoint_path, config):
-    tf_path = os.path.abspath(tf_checkpoint_path)
-    logger.info("Converting TensorFlow checkpoint from {}".format(tf_path))
-    # Load weights from TF model
-    init_vars = tf.train.list_variables(tf_path)
+def load_tf2_weights_in_bert(model, tf_model):
+    traces = []
     names = []
     arrays = []
     layer_depth = []
-    for full_name, shape in init_vars:
+
+    tf_variables = tf_model.variables
+    for var in tf_variables:
+        full_name, shape = var.name, var.shape
         # logger.info("Loading TF weight {} with shape {}".format(name, shape))
         name = full_name.split("/")
         if full_name == "_CHECKPOINTABLE_OBJECT_GRAPH" or name[0] in [
@@ -72,126 +72,110 @@ def load_tf2_weights_in_bert(model, tf_checkpoint_path, config):
         # figure out how many levels deep the name is
         depth = 0
         for _name in name:
-            if _name.startswith("layer_with_weights"):
+            if _name.startswith("layer_"):
                 depth += 1
             else:
                 break
         layer_depth.append(depth)
         # read data
-        array = tf.train.load_variable(tf_path, full_name)
+        array = var.numpy()
         names.append("/".join(name))
         arrays.append(array)
-    logger.info(f"Read a total of {len(arrays):,} layers")
-
-    # Sanity check
-    if len(set(layer_depth)) != 1:
-        raise ValueError(
-            f"Found layer names with different depths (layer depth {list(set(layer_depth))})"
-        )
-    layer_depth = list(set(layer_depth))[0]
-    if layer_depth != 1:
-        raise ValueError(
-            "The model contains more than just the embedding/encoder layers. This script does not handle MLM/NSP heads."
-        )
 
     # convert layers
     logger.info("Converting weights...")
     for full_name, array in zip(names, arrays):
-        name = full_name.split("/")
+        name = full_name.replace(":0", "").split("/")
+        if name == ["Variable"]:
+            # corresponds to do_lower_case attribute
+            continue
         pointer = model
         trace = []
         for i, m_name in enumerate(name):
-            if m_name == ".ATTRIBUTES":
-                # variable names end with .ATTRIBUTES/VARIABLE_VALUE
-                break
-            if m_name.startswith("layer_with_weights"):
-                layer_num = int(m_name.split("-")[-1])
-                if layer_num <= 2:
-                    # embedding layers
-                    # layer_num 0: word_embeddings
-                    # layer_num 1: position_embeddings
-                    # layer_num 2: token_type_embeddings
-                    continue
-                elif layer_num == 3:
-                    # embedding LayerNorm
-                    trace.extend(["embeddings", "LayerNorm"])
-                    pointer = getattr(pointer, "embeddings")
-                    pointer = getattr(pointer, "LayerNorm")
-                elif layer_num > 3 and layer_num < config.num_hidden_layers + 4:
-                    # encoder layers
-                    trace.extend(["encoder", "layer", str(layer_num - 4)])
-                    pointer = getattr(pointer, "encoder")
-                    pointer = getattr(pointer, "layer")
-                    pointer = pointer[layer_num - 4]
-                elif layer_num == config.num_hidden_layers + 4:
-                    # pooler layer
-                    trace.extend(["pooler", "dense"])
-                    pointer = getattr(pointer, "pooler")
-                    pointer = getattr(pointer, "dense")
-            elif m_name == "embeddings":
+            if m_name != "layer_norm" and m_name.startswith("layer"):
+                layer_num = int(m_name.split("_")[-1])
+                # encoder layers
+                trace.extend(["layer", str(layer_num)])
+                pointer = getattr(pointer, "layer")
+                pointer = pointer[layer_num]
+            #             elif layer_num == config.num_hidden_layers + 4:
+            #                 # pooler layer
+            #                 trace.extend(["pooler", "dense"])
+            #                 pointer = getattr(pointer, "pooler")
+            #                 pointer = getattr(pointer, "dense")
+            elif m_name == "transformer":
+                trace.extend(["encoder"])
+                pointer = getattr(pointer, "encoder")
+            elif m_name == "embeddings" and name[1] == "layer_norm":
+                trace.extend(["embeddings", "LayerNorm"])
+                pointer = getattr(pointer, "embeddings")
+                pointer = getattr(pointer, "LayerNorm")
+            elif i == 0 and "embedding" in m_name:
                 trace.append("embeddings")
                 pointer = getattr(pointer, "embeddings")
-                if layer_num == 0:
+                if m_name == "word_embeddings":
                     trace.append("word_embeddings")
                     pointer = getattr(pointer, "word_embeddings")
-                elif layer_num == 1:
+                elif m_name == "position_embedding":
                     trace.append("position_embeddings")
                     pointer = getattr(pointer, "position_embeddings")
-                elif layer_num == 2:
+                elif m_name == "type_embeddings":
                     trace.append("token_type_embeddings")
                     pointer = getattr(pointer, "token_type_embeddings")
                 else:
                     raise ValueError("Unknown embedding layer with name {full_name}")
                 trace.append("weight")
                 pointer = getattr(pointer, "weight")
-            elif m_name == "_attention_layer":
+            elif m_name.startswith("self_attention"):
                 # self-attention layer
-                trace.extend(["attention", "self"])
+                trace.extend(["attention"])
                 pointer = getattr(pointer, "attention")
-                pointer = getattr(pointer, "self")
-            elif m_name == "_attention_layer_norm":
-                # output attention norm
-                trace.extend(["attention", "output", "LayerNorm"])
-                pointer = getattr(pointer, "attention")
-                pointer = getattr(pointer, "output")
-                pointer = getattr(pointer, "LayerNorm")
-            elif m_name == "_attention_output_dense":
+            elif m_name == "attention_output":
                 # output attention dense
-                trace.extend(["attention", "output", "dense"])
-                pointer = getattr(pointer, "attention")
+                trace.extend(["output", "dense"])
                 pointer = getattr(pointer, "output")
                 pointer = getattr(pointer, "dense")
-            elif m_name == "_output_dense":
+            elif m_name == "output":
                 # output dense
                 trace.extend(["output", "dense"])
                 pointer = getattr(pointer, "output")
                 pointer = getattr(pointer, "dense")
-            elif m_name == "_output_layer_norm":
-                # output dense
-                trace.extend(["output", "LayerNorm"])
-                pointer = getattr(pointer, "output")
-                pointer = getattr(pointer, "LayerNorm")
-            elif m_name == "_key_dense":
+            #         elif m_name == "output_layer_norm":
+            #             # output dense
+            #             trace.extend(["output", "LayerNorm"])
+            #             pointer = getattr(pointer, "output")
+            #             pointer = getattr(pointer, "LayerNorm")
+            elif m_name == "key":
                 # attention key
+                trace.append("self")
                 trace.append("key")
+                pointer = getattr(pointer, "self")
                 pointer = getattr(pointer, "key")
-            elif m_name == "_query_dense":
+            elif m_name == "query":
                 # attention query
+                trace.append("self")
                 trace.append("query")
+                pointer = getattr(pointer, "self")
                 pointer = getattr(pointer, "query")
-            elif m_name == "_value_dense":
+            elif m_name == "value":
                 # attention value
+                trace.append("self")
                 trace.append("value")
+                pointer = getattr(pointer, "self")
                 pointer = getattr(pointer, "value")
-            elif m_name == "_intermediate_dense":
+            elif m_name == "intermediate":
                 # attention intermediate dense
                 trace.extend(["intermediate", "dense"])
                 pointer = getattr(pointer, "intermediate")
                 pointer = getattr(pointer, "dense")
-            elif m_name == "_output_layer_norm":
-                # output layer norm
-                trace.append("output")
-                pointer = getattr(pointer, "output")
+            elif m_name == "pooler_transform":
+                trace.extend(["pooler", "dense"])
+                pointer = getattr(pointer, "pooler")
+                pointer = getattr(pointer, "dense")
+            #         elif m_name == "_output_layer_norm":
+            #             # output layer norm
+            #             trace.append("output")
+            #             pointer = getattr(pointer, "output")
             # weights & biases
             elif m_name in ["bias", "beta"]:
                 trace.append("bias")
@@ -201,8 +185,17 @@ def load_tf2_weights_in_bert(model, tf_checkpoint_path, config):
                 pointer = getattr(pointer, "weight")
             else:
                 logger.warning(f"Ignored {m_name}")
+            if "_layer_norm" in m_name:
+                # output attention norm
+                trace.extend(["output", "LayerNorm"])
+                #             pointer = getattr(pointer, "attention")
+                pointer = getattr(pointer, "output")
+                pointer = getattr(pointer, "LayerNorm")
+
         # for certain layers reshape is necessary
+        logger.info(f"{full_name} -> {trace}")
         trace = ".".join(trace)
+        traces.append(trace)
         if re.match(
             r"(\S+)\.attention\.self\.(key|value|query)\.(bias|weight)", trace
         ) or re.match(r"(\S+)\.attention\.output\.dense\.weight", trace):
@@ -216,28 +209,36 @@ def load_tf2_weights_in_bert(model, tf_checkpoint_path, config):
                 f"Shape mismatch in layer {full_name}: Model expects shape {pointer.shape} but layer contains shape: {array.shape}"
             )
         logger.info(f"Successfully set variable {full_name} to PyTorch layer {trace}")
+    #         if trace == "encoder.layer.0.attention.self.query.weight":
+    #             break
     return model
 
 
 def convert_tf2_checkpoint_to_pytorch(
-    tf_checkpoint_path, config_path, pytorch_dump_path
+    # tf_checkpoint_path,
+    # config_path,
+    # pytorch_dump_path
 ):
     # Instantiate model
+    config_path = "notebooks/labse_config.json"
     logger.info(f"Loading model based on config from {config_path}...")
     config = BertConfig.from_json_file(config_path)
     model = BertModel(config)
 
+    tf_model = load_tf_model()
+
     # Load weights from checkpoint
-    logger.info(f"Loading weights from checkpoint {tf_checkpoint_path}...")
-    load_tf2_weights_in_bert(model, tf_checkpoint_path, config)
+    # logger.info(f"Loading weights from checkpoint {tf_checkpoint_path}...")
+    load_tf2_weights_in_bert(model, tf_model)
 
     # Save pytorch-model
-    logger.info(f"Saving PyTorch model to {pytorch_dump_path}...")
-    torch.save(model.state_dict(), pytorch_dump_path)
+    # logger.info(f"Saving PyTorch model to {pytorch_dump_path}...")
+    # torch.save(model.state_dict(), pytorch_dump_path)
+    return model
 
 
 def convert_tf2_hub_model_to_pytorch():
-    pass
+    return convert_tf2_checkpoint_to_pytorch()
 
 
 if __name__ == "__main__":
