@@ -3,7 +3,6 @@ from pytest import fixture
 
 from bert.tokenization.bert_tokenization import FullTokenizer
 from torch import no_grad
-from transformers import BertTokenizerFast
 
 from convert_labse_tf_pt import (
     convert_tf2_hub_model_to_pytorch,
