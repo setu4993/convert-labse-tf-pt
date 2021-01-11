@@ -35,30 +35,22 @@ def load_tf2_weights_in_bert(model, tf_model):
         full_name, array = var.name, var.numpy()
         name = full_name.replace(":0", "").split("/")
 
-        # corresponds to `do_lower_case` attribute of the model.
+        # Corresponds to `do_lower_case` attribute of the model.
         if full_name.startswith("Variable"):
             continue
         pointer = model
         trace = []
         for i, m_name in enumerate(name):
+            # Encoder layers
             if m_name != "layer_norm" and m_name.startswith("layer"):
                 layer_num = int(m_name.split("_")[-1])
-                # encoder layers
                 trace.extend(["layer", str(layer_num)])
                 pointer = getattr(pointer, "layer")
                 pointer = pointer[layer_num]
-            #             elif layer_num == config.num_hidden_layers + 4:
-            #                 # pooler layer
-            #                 trace.extend(["pooler", "dense"])
-            #                 pointer = getattr(pointer, "pooler")
-            #                 pointer = getattr(pointer, "dense")
             elif m_name == "transformer":
                 trace.extend(["encoder"])
                 pointer = getattr(pointer, "encoder")
-            elif m_name == "embeddings" and name[1] == "layer_norm":
-                trace.extend(["embeddings", "LayerNorm"])
-                pointer = getattr(pointer, "embeddings")
-                pointer = getattr(pointer, "LayerNorm")
+            # Embeddings.
             elif i == 0 and "embedding" in m_name:
                 trace.append("embeddings")
                 pointer = getattr(pointer, "embeddings")
@@ -71,12 +63,18 @@ def load_tf2_weights_in_bert(model, tf_model):
                 elif m_name == "type_embeddings":
                     trace.append("token_type_embeddings")
                     pointer = getattr(pointer, "token_type_embeddings")
+                # layer_norm for embeddings.
+                elif m_name == "embeddings":
+                    continue
                 else:
                     raise ValueError("Unknown embedding layer with name {full_name}")
                 trace.append("weight")
                 pointer = getattr(pointer, "weight")
+            elif m_name == "layer_norm":
+                trace.append("LayerNorm")
+                pointer = getattr(pointer, "LayerNorm")
+            # Self-attention layer.
             elif m_name.startswith("self_attention"):
-                # self-attention layer
                 trace.extend(["attention"])
                 pointer = getattr(pointer, "attention")
             elif m_name == "attention_output":
