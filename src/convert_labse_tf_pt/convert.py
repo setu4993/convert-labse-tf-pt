@@ -8,17 +8,15 @@ be imported with Huggingface/transformer.
 This script is adapted from HuggingFace's BERT conversion script: https://github.com/huggingface/transformers/blob/master/src/transformers/models/bert/convert_bert_original_tf2_checkpoint_to_pytorch.py
 """
 from argparse import ArgumentParser
-from logging import INFO, getLogger
 from pathlib import Path
 from re import match
 from typing import Tuple, Union
 
-import torch
-from tensorflow_hub import load
-from transformers import BertConfig, BertModel, BertTokenizerFast, TFBertModel
+from loguru import logger
 
-logger = getLogger(__name__)
-logger.setLevel(INFO)
+from tensorflow_hub import load
+from torch import from_numpy
+from transformers import BertConfig, BertModel, BertTokenizerFast, TFBertModel
 
 PATH = Union[str, Path]
 
@@ -190,7 +188,7 @@ def load_weights(model, tf_model):  # noqa: C901
         if "kernel" in full_name:
             array = array.transpose()
         if pointer.shape == array.shape:
-            pointer.data = torch.from_numpy(array)
+            pointer.data = from_numpy(array)
         else:
             raise ValueError(
                 f"Shape mismatch in layer {full_name}: Model expects shape "
