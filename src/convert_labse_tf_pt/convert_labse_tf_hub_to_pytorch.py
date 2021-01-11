@@ -63,7 +63,7 @@ def load_tf2_weights_in_bert(model, tf_model):
                 elif m_name == "type_embeddings":
                     trace.append("token_type_embeddings")
                     pointer = getattr(pointer, "token_type_embeddings")
-                # layer_norm for embeddings.
+                # LayerNorm for embeddings.
                 elif m_name == "embeddings":
                     continue
                 else:
@@ -74,56 +74,59 @@ def load_tf2_weights_in_bert(model, tf_model):
                 trace.append("LayerNorm")
                 pointer = getattr(pointer, "LayerNorm")
             # Self-attention layer.
-            elif m_name.startswith("self_attention"):
+            elif m_name == "self_attention":
                 trace.extend(["attention"])
                 pointer = getattr(pointer, "attention")
-            elif m_name == "attention_output":
-                # output attention dense
-                trace.extend(["output", "dense"])
-                pointer = getattr(pointer, "output")
-                pointer = getattr(pointer, "dense")
-            elif m_name == "output":
-                # output dense
-                trace.extend(["output", "dense"])
-                pointer = getattr(pointer, "output")
-                pointer = getattr(pointer, "dense")
-            #         elif m_name == "output_layer_norm":
-            #             # output dense
-            #             trace.extend(["output", "LayerNorm"])
-            #             pointer = getattr(pointer, "output")
-            #             pointer = getattr(pointer, "LayerNorm")
+            # Attention key.
             elif m_name == "key":
-                # attention key
                 trace.append("self")
                 trace.append("key")
                 pointer = getattr(pointer, "self")
                 pointer = getattr(pointer, "key")
+            # Attention query.
             elif m_name == "query":
-                # attention query
                 trace.append("self")
                 trace.append("query")
                 pointer = getattr(pointer, "self")
                 pointer = getattr(pointer, "query")
+            # Attention value.
             elif m_name == "value":
-                # attention value
                 trace.append("self")
                 trace.append("value")
                 pointer = getattr(pointer, "self")
                 pointer = getattr(pointer, "value")
+            # Attention output.
+            elif m_name == "attention_output":
+                trace.extend(["output", "dense"])
+                pointer = getattr(pointer, "output")
+                pointer = getattr(pointer, "dense")
+            # Attention output LayerNorm.
+            if m_name == "self_attention_layer_norm":
+                trace.extend(["attention", "output", "LayerNorm"])
+                pointer = getattr(pointer, "attention")
+                pointer = getattr(pointer, "output")
+                pointer = getattr(pointer, "LayerNorm")
+            # Attention intermediate.
             elif m_name == "intermediate":
-                # attention intermediate dense
                 trace.extend(["intermediate", "dense"])
                 pointer = getattr(pointer, "intermediate")
                 pointer = getattr(pointer, "dense")
+            # Output.
+            elif m_name == "output":
+                trace.extend(["output", "dense"])
+                pointer = getattr(pointer, "output")
+                pointer = getattr(pointer, "dense")
+            # Output LayerNorm.
+            elif m_name == "output_layer_norm":
+                trace.extend(["output", "LayerNorm"])
+                pointer = getattr(pointer, "output")
+                pointer = getattr(pointer, "LayerNorm")
+            # Pooler.
             elif m_name == "pooler_transform":
                 trace.extend(["pooler", "dense"])
                 pointer = getattr(pointer, "pooler")
                 pointer = getattr(pointer, "dense")
-            #         elif m_name == "_output_layer_norm":
-            #             # output layer norm
-            #             trace.append("output")
-            #             pointer = getattr(pointer, "output")
-            # weights & biases
+            # Weights, biases.
             elif m_name in ["bias", "beta"]:
                 trace.append("bias")
                 pointer = getattr(pointer, "bias")
@@ -132,17 +135,9 @@ def load_tf2_weights_in_bert(model, tf_model):
                 pointer = getattr(pointer, "weight")
             else:
                 logger.warning(f"Ignored {m_name}")
-            if "_layer_norm" in m_name:
-                # output attention norm
-                trace.extend(["output", "LayerNorm"])
-                #             pointer = getattr(pointer, "attention")
-                pointer = getattr(pointer, "output")
-                pointer = getattr(pointer, "LayerNorm")
 
-        # for certain layers reshape is necessary
-        logger.info(f"{full_name} -> {trace}")
+        # For certain layers reshape is necessary.
         trace = ".".join(trace)
-        traces.append(trace)
         if re.match(
             r"(\S+)\.attention\.self\.(key|value|query)\.(bias|weight)", trace
         ) or re.match(r"(\S+)\.attention\.output\.dense\.weight", trace):
@@ -156,8 +151,6 @@ def load_tf2_weights_in_bert(model, tf_model):
                 f"Shape mismatch in layer {full_name}: Model expects shape {pointer.shape} but layer contains shape: {array.shape}"
             )
         logger.info(f"Successfully set variable {full_name} to PyTorch layer {trace}")
-    #         if trace == "encoder.layer.0.attention.self.query.weight":
-    #             break
     return model
 
 
