@@ -4,6 +4,8 @@ published on TensorFlow Hub: https://tfhub.dev/google/LaBSE/1.
 
 The script re-maps the TF2.x Bert weight names to the original names, so the model can
 be imported with Huggingface/transformer.
+
+This script is adapted from HuggingFace's BERT conversion script: https://github.com/huggingface/transformers/blob/master/src/transformers/models/bert/convert_bert_original_tf2_checkpoint_to_pytorch.py
 """
 import argparse
 import re
