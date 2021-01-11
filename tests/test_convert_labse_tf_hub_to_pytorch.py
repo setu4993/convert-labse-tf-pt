@@ -33,13 +33,12 @@ def test_convert_tokenizer():
 
 def test_convert_model():
     hub_model = load_tf_model()
-    labse_tokenizer = get_labse_tokenizer(hub_model)
+    (model, labse_tokenizer) = convert_tf2_hub_model_to_pytorch()
+    model = model.eval()
+
     pt_tokenized = labse_tokenizer(
         SIMILAR_SENTENCES[0], return_tensors="pt", **TOKENIZER_ATTRIBUTES
     )
-    model = convert_tf2_hub_model_to_pytorch()
-    model = model.eval()
-
     with no_grad():
         pt_labse_output = model(**pt_tokenized)
     pt_output = pt_labse_output.pooler_output

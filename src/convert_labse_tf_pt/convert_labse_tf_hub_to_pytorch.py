@@ -7,30 +7,50 @@ be imported with Huggingface/transformer.
 
 This script is adapted from HuggingFace's BERT conversion script: https://github.com/huggingface/transformers/blob/master/src/transformers/models/bert/convert_bert_original_tf2_checkpoint_to_pytorch.py
 """
-import argparse
-import re
+from argparse import ArgumentParser
 from logging import INFO, getLogger
+from pathlib import Path
+from re import match
+from typing import Tuple, Union
 
 import torch
 from tensorflow_hub import load
-from transformers import BertConfig, BertModel, BertTokenizerFast
+
+from .modeling import LabseConfig, LabseModel, LabseTokenizerFast
 
 logger = getLogger(__name__)
 logger.setLevel(INFO)
 
+PATH = Union[str, Path]
 
-def load_tf_model():
-    return load("https://tfhub.dev/google/LaBSE/1")
+DEFAULT_MODEL = "https://tfhub.dev/google/LaBSE/1"
+DEFAULT_CONFIG = "config/labse_config.json"
 
 
-def get_labse_tokenizer(tf_model) -> BertTokenizerFast:
-    return BertTokenizerFast(
+def load_tf_model(tf_saved_model: PATH = None):
+    tf_saved_model = tf_saved_model or DEFAULT_MODEL
+    return load(tf_saved_model)
+
+
+def get_labse_model(labse_config: PATH = None) -> LabseModel:
+    labse_config = labse_config or DEFAULT_CONFIG
+    logger.info(f"Loading model based on config from {labse_config}...")
+    config = LabseConfig.from_json_file(labse_config)
+    return LabseModel(config)
+
+
+def get_labse_tokenizer(tf_model) -> LabseTokenizerFast:
+    return LabseTokenizerFast(
         tf_model.vocab_file.asset_path.numpy(),
         do_lower_case=tf_model.do_lower_case.numpy().item(),
     )
 
 
-def load_tf2_weights_in_bert(model, tf_model):
+def save_labse_models(model: LabseModel, tokenizer: LabseTokenizerFast):
+    pass
+
+
+def load_tf2_weights_in_labse(model, tf_model):
     # Convert layers.
     logger.info("Converting weights...")
     for var in tf_model.variables:
@@ -157,54 +177,52 @@ def load_tf2_weights_in_bert(model, tf_model):
     return model
 
 
-def convert_tf2_checkpoint_to_pytorch(
-    # tf_checkpoint_path,
-    # config_path,
-    # pytorch_dump_path
-):
-    # Instantiate model
-    config_path = "config/labse_config.json"
-    logger.info(f"Loading model based on config from {config_path}...")
-    config = BertConfig.from_json_file(config_path)
-    model = BertModel(config)
+def convert_tf2_hub_model_to_pytorch(
+    tf_saved_model: PATH = None,
+    labse_config: PATH = None,
+    output_path: PATH = None,
+) -> Tuple[LabseModel, LabseTokenizerFast]:
+    logger.info("Loading pre-trained LaBSE TensorFlow SavedModel from TF Hub or disk.")
+    tf_model = load_tf_model(tf_saved_model)
 
-    tf_model = load_tf_model()
+    logger.info("Creating empty LaBSE model.")
+    model = get_labse_model(labse_config)
 
-    # Load weights from checkpoint
-    # logger.info(f"Loading weights from checkpoint {tf_checkpoint_path}...")
-    load_tf2_weights_in_bert(model, tf_model)
+    logger.info("Loading weights from TF SavedModel.")
+    model = load_tf2_weights_in_labse(model, tf_model)
+
+    logger.info("Initializing LaBSE tokenizer.")
+    tokenizer = get_labse_tokenizer(tf_model)
+
+    if output_path:
+        save_labse_models(model, tokenizer)
 
     # Save pytorch-model
     # logger.info(f"Saving PyTorch model to {pytorch_dump_path}...")
     # torch.save(model.state_dict(), pytorch_dump_path)
-    return model
-
-
-def convert_tf2_hub_model_to_pytorch():
-    return convert_tf2_checkpoint_to_pytorch()
+    return (model, tokenizer)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = ArgumentParser()
     parser.add_argument(
-        "--tf_checkpoint_path",
+        "--tf_saved_model",
         type=str,
-        required=True,
-        help="Path to the TensorFlow 2.x checkpoint path.",
+        help="Path or URL to the TensorFlow 2.x SavedModel.",
+        default=None,
     )
     parser.add_argument(
-        "--bert_config_file",
+        "--labse_config",
         type=str,
-        required=True,
-        help="The config json file corresponding to the BERT model. This specifies the model architecture.",
+        help="JSON config file corresponding to the LaBSE model. This file specifies the model architecture.",
     )
     parser.add_argument(
-        "--pytorch_dump_path",
+        "--output_path",
         type=str,
-        required=True,
-        help="Path to the output PyTorch model (must include filename).",
+        help="Path where the model and tokenizer should be output.",
+        default=None,
     )
     args = parser.parse_args()
-    convert_tf2_checkpoint_to_pytorch(
-        args.tf_checkpoint_path, args.bert_config_file, args.pytorch_dump_path
+    convert_tf2_hub_model_to_pytorch(
+        args.tf_saved_model, args.labse_config, args.output_path
     )
