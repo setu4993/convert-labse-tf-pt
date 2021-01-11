@@ -15,8 +15,7 @@ from typing import Tuple, Union
 
 import torch
 from tensorflow_hub import load
-
-from .modeling import LabseConfig, LabseModel, LabseTokenizerFast
+from transformers import BertConfig, BertModel, BertTokenizerFast, TFBertModel
 
 logger = getLogger(__name__)
 logger.setLevel(INFO)
@@ -32,21 +31,21 @@ def load_tf_model(tf_saved_model: PATH = None):
     return load(tf_saved_model)
 
 
-def get_labse_model(labse_config: PATH = None) -> LabseModel:
+def get_labse_model(labse_config: PATH = None) -> BertModel:
     labse_config = labse_config or DEFAULT_CONFIG
     logger.info(f"Loading model based on config from {labse_config}...")
-    config = LabseConfig.from_json_file(labse_config)
-    return LabseModel(config)
+    config = BertConfig.from_json_file(labse_config)
+    return BertModel(config)
 
 
-def get_labse_tokenizer(tf_model) -> LabseTokenizerFast:
-    return LabseTokenizerFast(
+def get_labse_tokenizer(tf_model) -> BertTokenizerFast:
+    return BertTokenizerFast(
         tf_model.vocab_file.asset_path.numpy(),
         do_lower_case=tf_model.do_lower_case.numpy().item(),
     )
 
 
-def save_labse_models(model: LabseModel, tokenizer: LabseTokenizerFast):
+def save_labse_models(model: BertModel, tokenizer: BertTokenizerFast):
     pass
 
 
@@ -181,7 +180,7 @@ def convert_tf2_hub_model_to_pytorch(
     tf_saved_model: PATH = None,
     labse_config: PATH = None,
     output_path: PATH = None,
-) -> Tuple[LabseModel, LabseTokenizerFast]:
+) -> Tuple[BertModel, BertTokenizerFast]:
     logger.info("Loading pre-trained LaBSE TensorFlow SavedModel from TF Hub or disk.")
     tf_model = load_tf_model(tf_saved_model)
 
