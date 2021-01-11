@@ -5,3 +5,4 @@ from .convert_labse_tf_hub_to_pytorch import (
     get_labse_tokenizer,
     load_tf_model,
 )
+from .modeling import LabseConfig, LabseModel, LabseTokenizerFast
