@@ -220,7 +220,7 @@ def convert_tf2_checkpoint_to_pytorch(
     # pytorch_dump_path
 ):
     # Instantiate model
-    config_path = "notebooks/labse_config.json"
+    config_path = "config/labse_config.json"
     logger.info(f"Loading model based on config from {config_path}...")
     config = BertConfig.from_json_file(config_path)
     model = BertModel(config)
