@@ -45,8 +45,32 @@ def get_labse_tokenizer(tf_model) -> BertTokenizerFast:
     )
 
 
-def save_labse_models(model: BertModel, tokenizer: BertTokenizerFast):
-    pass
+def save_labse_models(
+    model: BertModel,
+    tokenizer: BertTokenizerFast,
+    output_path: PATH,
+    save_tokenizer: bool = True,
+    save_tf: bool = True,
+):
+    output_path = Path(output_path) if isinstance(output_path, str) else output_path
+
+    pt_output_path = output_path.joinpath("pt")
+    pt_output_path.mkdir(exist_ok=True, parents=True)
+    model.save_pretrained(pt_output_path)
+
+    if save_tokenizer:
+        tknzr_output_path = output_path.joinpath("tokenizer")
+        tknzr_output_path.mkdir(exist_ok=True, parents=True)
+        tokenizer.save_pretrained(tknzr_output_path)
+
+    if save_tf:
+        tf_output_path = output_path.joinpath("tf")
+        tf_output_path.mkdir(exist_ok=True, parents=True)
+        logger.info(
+            f"Loading HuggingFace compatible TF LaBSE model from {pt_output_path}."
+        )
+        tf_model = TFBertModel.from_pretrained(pt_output_path, from_pt=True)
+        tf_model.save_pretrained(tf_output_path)
 
 
 def load_tf2_weights_in_labse(model, tf_model):
@@ -194,11 +218,13 @@ def convert_tf2_hub_model_to_pytorch(
     tokenizer = get_labse_tokenizer(tf_model)
 
     if output_path:
-        save_labse_models(model, tokenizer)
+        logger.info(f"Saving model and tokenizer to {output_path}.")
+        save_labse_models(model, tokenizer, output_path)
+    else:
+        logger.warning(
+            "output_path not set, skipping saving model and tokenizer to disk."
+        )
 
-    # Save pytorch-model
-    # logger.info(f"Saving PyTorch model to {pytorch_dump_path}...")
-    # torch.save(model.state_dict(), pytorch_dump_path)
     return (model, tokenizer)
 
 
