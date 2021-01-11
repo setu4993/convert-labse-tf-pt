@@ -29,47 +29,14 @@ def get_labse_tokenizer(tf_model) -> BertTokenizerFast:
 
 
 def load_tf2_weights_in_bert(model, tf_model):
-    traces = []
-    names = []
-    arrays = []
-    layer_depth = []
-
-    tf_variables = tf_model.variables
-    for var in tf_variables:
-        full_name, shape = var.name, var.shape
-        # logger.info("Loading TF weight {} with shape {}".format(name, shape))
-        name = full_name.split("/")
-        if full_name == "_CHECKPOINTABLE_OBJECT_GRAPH" or name[0] in [
-            "global_step",
-            "save_counter",
-        ]:
-            logger.info(f"Skipping non-model layer {full_name}")
-            continue
-        if "optimizer" in full_name:
-            logger.info(f"Skipping optimization layer {full_name}")
-            continue
-        if name[0] == "model":
-            # ignore initial 'model'
-            name = name[1:]
-        # figure out how many levels deep the name is
-        depth = 0
-        for _name in name:
-            if _name.startswith("layer_"):
-                depth += 1
-            else:
-                break
-        layer_depth.append(depth)
-        # read data
-        array = var.numpy()
-        names.append("/".join(name))
-        arrays.append(array)
-
-    # convert layers
+    # Convert layers.
     logger.info("Converting weights...")
-    for full_name, array in zip(names, arrays):
+    for var in tf_model.variables:
+        full_name, array = var.name, var.numpy()
         name = full_name.replace(":0", "").split("/")
-        if name == ["Variable"]:
-            # corresponds to do_lower_case attribute
+
+        # corresponds to `do_lower_case` attribute of the model.
+        if full_name.startswith("Variable"):
             continue
         pointer = model
         trace = []
