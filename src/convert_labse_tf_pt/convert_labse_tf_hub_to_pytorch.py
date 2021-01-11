@@ -42,14 +42,14 @@ def load_tf2_weights_in_bert(model, tf_model):
         trace = []
         for i, m_name in enumerate(name):
             # Encoder layers
-            if m_name != "layer_norm" and m_name.startswith("layer"):
+            if m_name == "transformer":
+                trace.extend(["encoder"])
+                pointer = getattr(pointer, "encoder")
+            elif match(r"layer_\d+", m_name):
                 layer_num = int(m_name.split("_")[-1])
                 trace.extend(["layer", str(layer_num)])
                 pointer = getattr(pointer, "layer")
                 pointer = pointer[layer_num]
-            elif m_name == "transformer":
-                trace.extend(["encoder"])
-                pointer = getattr(pointer, "encoder")
             # Embeddings.
             elif i == 0 and "embedding" in m_name:
                 trace.append("embeddings")
@@ -67,7 +67,7 @@ def load_tf2_weights_in_bert(model, tf_model):
                 elif m_name == "embeddings":
                     continue
                 else:
-                    raise ValueError("Unknown embedding layer with name {full_name}")
+                    raise ValueError(f"Unknown embedding layer with name {full_name}")
                 trace.append("weight")
                 pointer = getattr(pointer, "weight")
             elif m_name == "layer_norm":
@@ -101,7 +101,7 @@ def load_tf2_weights_in_bert(model, tf_model):
                 pointer = getattr(pointer, "output")
                 pointer = getattr(pointer, "dense")
             # Attention output LayerNorm.
-            if m_name == "self_attention_layer_norm":
+            elif m_name == "self_attention_layer_norm":
                 trace.extend(["attention", "output", "LayerNorm"])
                 pointer = getattr(pointer, "attention")
                 pointer = getattr(pointer, "output")
@@ -138,9 +138,9 @@ def load_tf2_weights_in_bert(model, tf_model):
 
         # For certain layers reshape is necessary.
         trace = ".".join(trace)
-        if re.match(
+        if match(
             r"(\S+)\.attention\.self\.(key|value|query)\.(bias|weight)", trace
-        ) or re.match(r"(\S+)\.attention\.output\.dense\.weight", trace):
+        ) or match(r"(\S+)\.attention\.output\.dense\.weight", trace):
             array = array.reshape(pointer.data.shape)
         if "kernel" in full_name:
             array = array.transpose()
@@ -148,7 +148,8 @@ def load_tf2_weights_in_bert(model, tf_model):
             pointer.data = torch.from_numpy(array)
         else:
             raise ValueError(
-                f"Shape mismatch in layer {full_name}: Model expects shape {pointer.shape} but layer contains shape: {array.shape}"
+                f"Shape mismatch in layer {full_name}: Model expects shape "
+                f"{pointer.shape} but layer contains shape: {array.shape}"
             )
         logger.info(f"Successfully set variable {full_name} to PyTorch layer {trace}")
     return model
