@@ -1,3 +1,4 @@
+# flake8: noqa
 from .convert import (
     MODEL_TOKENIZER,
     convert_tf2_hub_model_to_pytorch,
