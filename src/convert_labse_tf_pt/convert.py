@@ -262,7 +262,7 @@ def similarity(embeddings_1, embeddings_2):
     return matmul(normalized_embeddings_1, normalized_embeddings_2.transpose(0, 1))
 
 
-if __name__ == "__main__":
+def main():
     parser = ArgumentParser()
     parser.add_argument(
         "--tf_saved_model",
@@ -285,3 +285,7 @@ if __name__ == "__main__":
     convert_tf2_hub_model_to_pytorch(
         args.tf_saved_model, args.labse_config, args.output_path
     )
+
+
+if __name__ == "__main__":
+    main()
