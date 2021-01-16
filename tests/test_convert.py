@@ -5,7 +5,7 @@ from numpy import allclose
 from pytest import fixture, mark
 
 from bert.tokenization.bert_tokenization import FullTokenizer
-from torch import Tensor
+from torch import Tensor, ones, rand
 from transformers import BertModel, BertTokenizerFast
 from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAttentions
 
@@ -16,6 +16,7 @@ from convert_labse_tf_pt import (
     get_labse_tokenizer,
     load_tf_model,
     save_labse_models,
+    similarity,
 )
 
 SIMILAR_SENTENCES = ["Hi, how are you?", "Hello, how are you doing?"]
@@ -104,6 +105,15 @@ def test_get_embedding(sentences, model_tokenizer: MODEL_TOKENIZER):
         assert isinstance(getattr(output, attr), Tensor)
 
 
+def test_similarity():
+    X_DIM = 2
+    vector = rand(X_DIM, 128)
+    scores = similarity(vector, vector)
+    assert allclose(scores.diag(), ones(X_DIM))
+    assert allclose(scores[0][0], scores[1][1])
+    assert allclose(scores[0][1], scores[1][0])
+
+
 def test_embeddings_converted_model(
     hub_model, hf_tokenizer: BertTokenizerFast, model_tokenizer: MODEL_TOKENIZER
 ):
@@ -114,3 +124,7 @@ def test_embeddings_converted_model(
     assert allclose(
         pt_output.detach().numpy(), tf_output.numpy(), rtol=TOLERANCE, atol=TOLERANCE
     )
+
+
+def test_embeddings_similarity():
+    pass

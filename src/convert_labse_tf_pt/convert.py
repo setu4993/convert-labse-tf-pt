@@ -14,8 +14,9 @@ from typing import List, Tuple, Union
 
 from loguru import logger
 
+import torch.nn.functional as F
 from tensorflow_hub import load
-from torch import from_numpy, no_grad
+from torch import from_numpy, matmul, no_grad
 from transformers import BertConfig, BertModel, BertTokenizerFast, TFBertModel
 from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAttentions
 
@@ -253,6 +254,12 @@ def get_embedding(
     with no_grad():
         output = model(**tokenized)
     return output
+
+
+def similarity(embeddings_1, embeddings_2):
+    normalized_embeddings_1 = F.normalize(embeddings_1, p=2)
+    normalized_embeddings_2 = F.normalize(embeddings_2, p=2)
+    return matmul(normalized_embeddings_1, normalized_embeddings_2.transpose(0, 1))
 
 
 if __name__ == "__main__":

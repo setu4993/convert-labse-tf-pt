@@ -6,4 +6,5 @@ from .convert import (
     get_labse_tokenizer,
     load_tf_model,
     save_labse_models,
+    similarity,
 )
