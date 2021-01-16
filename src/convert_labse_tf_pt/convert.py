@@ -8,6 +8,7 @@ be imported with Huggingface/transformer.
 This script is adapted from HuggingFace's BERT conversion script: https://github.com/huggingface/transformers/blob/master/src/transformers/models/bert/convert_bert_original_tf2_checkpoint_to_pytorch.py
 """
 from argparse import ArgumentParser
+from json import loads
 from pathlib import Path
 from re import match
 from typing import List, Tuple, Union
@@ -24,7 +25,6 @@ PATH = Union[str, Path]
 MODEL_TOKENIZER = Tuple[BertModel, BertTokenizerFast]
 
 DEFAULT_MODEL = "https://tfhub.dev/google/LaBSE/1"
-DEFAULT_CONFIG = "config/labse_config.json"
 
 
 def load_tf_model(tf_saved_model: PATH = None):
@@ -33,9 +33,15 @@ def load_tf_model(tf_saved_model: PATH = None):
 
 
 def get_labse_model(labse_config: PATH = None) -> BertModel:
-    labse_config = labse_config or DEFAULT_CONFIG
-    logger.info(f"Loading model based on config from {labse_config}...")
-    config = BertConfig.from_json_file(labse_config)
+    if labse_config:
+        labse_config = (
+            Path(labse_config) if isinstance(labse_config, str) else labse_config
+        )
+        logger.info(f"Loading model based on config from {labse_config}...")
+        config = BertConfig.from_json_file(labse_config)
+    else:
+        config = BertConfig.from_pretrained("bert-base-uncased")
+        config.vocab_size = 501153
     return BertModel(config)
 
 
