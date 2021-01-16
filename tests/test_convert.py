@@ -20,6 +20,17 @@ from convert_labse_tf_pt import (
 )
 
 SIMILAR_SENTENCES = ["Hi, how are you?", "Hello, how are you doing?"]
+ENGLISH_SENTENCES = [
+    "dog",
+    "Puppies are nice.",
+    "I enjoy taking long walks along the beach with my dog.",
+]
+ITALIAN_SENTENCES = [
+    "cane",
+    "I cuccioli sono carini.",
+    "Mi piace fare lunghe passeggiate lungo la spiaggia con il mio cane.",
+]
+JAPANESE_SENTENCES = ["犬", "子犬はいいです", "私は犬と一緒にビーチを散歩するのが好きです"]
 TOLERANCE = 0.01
 
 
@@ -45,10 +56,22 @@ def model_tokenizer() -> Tuple[BertModel, BertTokenizerFast]:
     return convert_tf2_hub_model_to_pytorch()
 
 
-def tf_model_output(hub_model, hf_tokenizer):
-    tf_tokenized = hf_tokenizer(
-        SIMILAR_SENTENCES[0], return_tensors="tf", padding="max_length"
-    )
+@fixture(
+    params=[
+        SIMILAR_SENTENCES[0],
+        SIMILAR_SENTENCES,
+        ENGLISH_SENTENCES,
+        ITALIAN_SENTENCES,
+        JAPANESE_SENTENCES,
+    ]
+)
+def sentences(request):
+    return request.param
+
+
+def tf_model_output(sentences, hub_model, hf_tokenizer):
+    sentences = [sentences] if isinstance(sentences, str) else sentences
+    tf_tokenized = hf_tokenizer(sentences, return_tensors="tf", padding="max_length")
     return hub_model(
         [
             tf_tokenized.input_ids,
@@ -95,7 +118,6 @@ def test_save_labse_models(tmp_path: Path, model_tokenizer: MODEL_TOKENIZER):
     assert tmp_path.joinpath("tokenizer").joinpath("special_tokens_map.json").exists()
 
 
-@mark.parametrize("sentences", [SIMILAR_SENTENCES[0], SIMILAR_SENTENCES])
 def test_get_embedding(sentences, model_tokenizer: MODEL_TOKENIZER):
     output = get_embedding(sentences, *model_tokenizer)
     assert isinstance(output, BaseModelOutputWithPoolingAndCrossAttentions)
