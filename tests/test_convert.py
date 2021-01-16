@@ -47,6 +47,12 @@ def test_convert_tokenizer(hub_model):
     assert isinstance(tokenizer, BertTokenizerFast)
 
 
+def test_convert_model():
+    (model, tokenizer) = convert_tf2_hub_model_to_pytorch()
+    assert isinstance(model, BertModel)
+    assert isinstance(tokenizer, BertTokenizerFast)
+
+
 def test_tokenized(bert_tokenizer, hf_tokenizer):
     tf_tokenized = bert_tokenizer.convert_tokens_to_ids(
         bert_tokenizer.tokenize(SIMILAR_SENTENCES[0])
@@ -54,12 +60,6 @@ def test_tokenized(bert_tokenizer, hf_tokenizer):
 
     hf_tokenized = hf_tokenizer(SIMILAR_SENTENCES[0], add_special_tokens=False)
     assert tf_tokenized == hf_tokenized.input_ids
-
-
-def test_convert_model():
-    (model, tokenizer) = convert_tf2_hub_model_to_pytorch()
-    assert isinstance(model, BertModel)
-    assert isinstance(tokenizer, BertTokenizerFast)
 
 
 def test_save_labse_models(
