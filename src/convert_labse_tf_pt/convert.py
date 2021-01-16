@@ -10,13 +10,14 @@ This script is adapted from HuggingFace's BERT conversion script: https://github
 from argparse import ArgumentParser
 from pathlib import Path
 from re import match
-from typing import Tuple, Union
+from typing import List, Tuple, Union
 
 from loguru import logger
 
 from tensorflow_hub import load
-from torch import from_numpy
+from torch import from_numpy, no_grad
 from transformers import BertConfig, BertModel, BertTokenizerFast, TFBertModel
+from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAttentions
 
 PATH = Union[str, Path]
 
@@ -228,6 +229,29 @@ def convert_tf2_hub_model_to_pytorch(
         )
 
     return (model, tokenizer)
+
+
+def get_embedding(
+    sentences: Union[str, List[str]],
+    model: BertModel = None,
+    tokenizer: BertTokenizerFast = None,
+) -> BaseModelOutputWithPoolingAndCrossAttentions:
+    if not model and not tokenizer:
+        (model, tokenizer) = convert_tf2_hub_model_to_pytorch()
+    elif not model:
+        (model, _) = convert_tf2_hub_model_to_pytorch()
+    elif not tokenizer:
+        tokenizer = get_labse_tokenizer(load_tf_model())
+
+    if isinstance(sentences, str):
+        sentences = [sentences]
+
+    model = model.eval()
+
+    tokenized = tokenizer(sentences, return_tensors="pt", padding="max_length")
+    with no_grad():
+        output = model(**tokenized)
+    return output
 
 
 if __name__ == "__main__":
