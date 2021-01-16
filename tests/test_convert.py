@@ -2,14 +2,17 @@ from pathlib import Path
 from typing import Tuple
 
 from numpy import allclose
-from pytest import fixture
+from pytest import fixture, mark
 
 from bert.tokenization.bert_tokenization import FullTokenizer
-from torch import no_grad
+from torch import Tensor, no_grad
 from transformers import BertModel, BertTokenizerFast
+from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAttentions
 
 from convert_labse_tf_pt import (
+    MODEL_TOKENIZER,
     convert_tf2_hub_model_to_pytorch,
+    get_embedding,
     get_labse_tokenizer,
     load_tf_model,
     save_labse_models,
@@ -62,9 +65,7 @@ def test_tokenized(bert_tokenizer, hf_tokenizer):
     assert tf_tokenized == hf_tokenized.input_ids
 
 
-def test_save_labse_models(
-    tmp_path: Path, model_tokenizer: Tuple[BertModel, BertTokenizerFast]
-):
+def test_save_labse_models(tmp_path: Path, model_tokenizer: MODEL_TOKENIZER):
     save_labse_models(*model_tokenizer, tmp_path, save_tokenizer=True, save_tf=True)
 
     # PyTorch Model
@@ -81,7 +82,17 @@ def test_save_labse_models(
     assert tmp_path.joinpath("tokenizer").joinpath("special_tokens_map.json").exists()
 
 
-def test_embeddings_converted_model(hub_model, model_tokenizer):
+@mark.parametrize("sentences", [SIMILAR_SENTENCES[0], SIMILAR_SENTENCES])
+def test_get_embedding(sentences, model_tokenizer: MODEL_TOKENIZER):
+    output = get_embedding(sentences, *model_tokenizer)
+    assert isinstance(output, BaseModelOutputWithPoolingAndCrossAttentions)
+    ATTRS = ["last_hidden_state", "pooler_output"]
+    for attr in ATTRS:
+        assert hasattr(output, attr)
+        assert isinstance(getattr(output, attr), Tensor)
+
+
+def test_embeddings_converted_model(hub_model, model_tokenizer: MODEL_TOKENIZER):
     hub_model = load_tf_model()
     (model, hf_tokenizer) = model_tokenizer
     model = model.eval()

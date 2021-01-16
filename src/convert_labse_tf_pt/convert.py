@@ -20,6 +20,7 @@ from transformers import BertConfig, BertModel, BertTokenizerFast, TFBertModel
 from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAttentions
 
 PATH = Union[str, Path]
+MODEL_TOKENIZER = Tuple[BertModel, BertTokenizerFast]
 
 DEFAULT_MODEL = "https://tfhub.dev/google/LaBSE/1"
 DEFAULT_CONFIG = "config/labse_config.json"
@@ -207,7 +208,7 @@ def convert_tf2_hub_model_to_pytorch(
     tf_saved_model: PATH = None,
     labse_config: PATH = None,
     output_path: PATH = None,
-) -> Tuple[BertModel, BertTokenizerFast]:
+) -> MODEL_TOKENIZER:
     logger.info("Loading pre-trained LaBSE TensorFlow SavedModel from TF Hub or disk.")
     tf_model = load_tf_model(tf_saved_model)
 
