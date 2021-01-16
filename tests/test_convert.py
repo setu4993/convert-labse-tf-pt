@@ -5,7 +5,7 @@ from numpy import allclose
 from pytest import fixture, mark
 
 from bert.tokenization.bert_tokenization import FullTokenizer
-from torch import Tensor, no_grad
+from torch import Tensor
 from transformers import BertModel, BertTokenizerFast
 from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAttentions
 
@@ -19,8 +19,7 @@ from convert_labse_tf_pt import (
 )
 
 SIMILAR_SENTENCES = ["Hi, how are you?", "Hello, how are you doing?"]
-TOKENIZER_ATTRIBUTES = {"padding": "max_length", "max_length": 64}
-TOLERANCE = 0.1
+TOLERANCE = 0.01
 
 
 @fixture(scope="session")
@@ -43,6 +42,19 @@ def hf_tokenizer(hub_model) -> BertTokenizerFast:
 @fixture(scope="session")
 def model_tokenizer() -> Tuple[BertModel, BertTokenizerFast]:
     return convert_tf2_hub_model_to_pytorch()
+
+
+def tf_model_output(hub_model, hf_tokenizer):
+    tf_tokenized = hf_tokenizer(
+        SIMILAR_SENTENCES[0], return_tensors="tf", padding="max_length"
+    )
+    return hub_model(
+        [
+            tf_tokenized.input_ids,
+            tf_tokenized.attention_mask,
+            tf_tokenized.token_type_ids,
+        ]
+    )
 
 
 def test_convert_tokenizer(hub_model):
@@ -92,29 +104,13 @@ def test_get_embedding(sentences, model_tokenizer: MODEL_TOKENIZER):
         assert isinstance(getattr(output, attr), Tensor)
 
 
-def test_embeddings_converted_model(hub_model, model_tokenizer: MODEL_TOKENIZER):
-    hub_model = load_tf_model()
-    (model, hf_tokenizer) = model_tokenizer
-    model = model.eval()
+def test_embeddings_converted_model(
+    hub_model, hf_tokenizer: BertTokenizerFast, model_tokenizer: MODEL_TOKENIZER
+):
+    pt_output = get_embedding(SIMILAR_SENTENCES[0], *model_tokenizer).pooler_output
 
-    pt_tokenized = hf_tokenizer(
-        SIMILAR_SENTENCES[0], return_tensors="pt", **TOKENIZER_ATTRIBUTES
-    )
-    with no_grad():
-        pt_labse_output = model(**pt_tokenized)
-    pt_output = pt_labse_output.pooler_output
+    tf_output = tf_model_output(hub_model, hf_tokenizer)[0]
 
-    tf_tokenized = hf_tokenizer(
-        SIMILAR_SENTENCES[0], return_tensors="tf", **TOKENIZER_ATTRIBUTES
-    )
-    tf_labse_output = hub_model(
-        [
-            tf_tokenized.input_ids,
-            tf_tokenized.attention_mask,
-            tf_tokenized.token_type_ids,
-        ]
-    )
-    tf_output = tf_labse_output[0]
     assert allclose(
         pt_output.detach().numpy(), tf_output.numpy(), rtol=TOLERANCE, atol=TOLERANCE
     )
