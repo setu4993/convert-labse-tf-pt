@@ -5,7 +5,7 @@ from numpy import allclose
 from pytest import fixture, mark
 
 from bert.tokenization.bert_tokenization import FullTokenizer
-from torch import Tensor, ones, rand
+from torch import Tensor, from_numpy, ones, rand
 from transformers import BertModel, BertTokenizerFast
 from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAttentions
 
@@ -137,16 +137,39 @@ def test_similarity():
 
 
 def test_embeddings_converted_model(
-    hub_model, hf_tokenizer: BertTokenizerFast, model_tokenizer: MODEL_TOKENIZER
+    sentences,
+    hub_model,
+    model_tokenizer: MODEL_TOKENIZER,
 ):
-    pt_output = get_embedding(SIMILAR_SENTENCES[0], *model_tokenizer).pooler_output
+    (model, hf_tokenizer) = model_tokenizer
+    pt_output = get_embedding(sentences, model, hf_tokenizer).pooler_output
+    tf_output = tf_model_output(sentences, hub_model, hf_tokenizer)[0]
 
-    tf_output = tf_model_output(hub_model, hf_tokenizer)[0]
+    assert allclose(pt_output.detach().numpy(), tf_output.numpy(), atol=TOLERANCE)
 
-    assert allclose(
-        pt_output.detach().numpy(), tf_output.numpy(), rtol=TOLERANCE, atol=TOLERANCE
+
+@mark.parametrize(
+    "sentences1,sentences2",
+    [
+        (ENGLISH_SENTENCES, ITALIAN_SENTENCES),
+        (ENGLISH_SENTENCES, JAPANESE_SENTENCES),
+        (ITALIAN_SENTENCES, JAPANESE_SENTENCES),
+    ],
+)
+def test_similarity_converted_model(
+    sentences1,
+    sentences2,
+    hub_model,
+    model_tokenizer: MODEL_TOKENIZER,
+):
+    (model, hf_tokenizer) = model_tokenizer
+    pt_output1 = get_embedding(sentences1, model, hf_tokenizer).pooler_output
+    pt_output2 = get_embedding(sentences2, model, hf_tokenizer).pooler_output
+    tf_output1 = tf_model_output(sentences1, hub_model, hf_tokenizer)[0]
+    tf_output2 = tf_model_output(sentences2, hub_model, hf_tokenizer)[0]
+
+    pt_similarity = similarity(pt_output1, pt_output2)
+    tf_similarity = similarity(
+        from_numpy(tf_output1.numpy()), from_numpy(tf_output2.numpy())
     )
-
-
-def test_embeddings_similarity():
-    pass
+    assert allclose(pt_similarity, tf_similarity, atol=TOLERANCE)
