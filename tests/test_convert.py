@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Tuple
 
 from numpy import allclose
@@ -11,6 +12,7 @@ from convert_labse_tf_pt import (
     convert_tf2_hub_model_to_pytorch,
     get_labse_tokenizer,
     load_tf_model,
+    save_labse_models,
 )
 
 SIMILAR_SENTENCES = ["Hi, how are you?", "Hello, how are you doing?"]
@@ -55,18 +57,43 @@ def test_tokenized(bert_tokenizer, hf_tokenizer):
 
 
 def test_convert_model():
+    (model, tokenizer) = convert_tf2_hub_model_to_pytorch()
+    assert isinstance(model, BertModel)
+    assert isinstance(tokenizer, BertTokenizerFast)
+
+
+def test_save_labse_models(
+    tmp_path: Path, model_tokenizer: Tuple[BertModel, BertTokenizerFast]
+):
+    save_labse_models(*model_tokenizer, tmp_path, save_tokenizer=True, save_tf=True)
+
+    # PyTorch Model
+    assert tmp_path.joinpath("pt").joinpath("config.json").exists()
+    assert tmp_path.joinpath("pt").joinpath("pytorch_model.bin").exists()
+
+    # T5 model
+    assert tmp_path.joinpath("tf").joinpath("config.json").exists()
+    assert tmp_path.joinpath("tf").joinpath("tf_model.h5").exists()
+
+    # Tokenizer.
+    assert tmp_path.joinpath("tokenizer").joinpath("tokenizer_config.json").exists()
+    assert tmp_path.joinpath("tokenizer").joinpath("vocab.txt").exists()
+    assert tmp_path.joinpath("tokenizer").joinpath("special_tokens_map.json").exists()
+
+
+def test_embeddings_converted_model(hub_model, model_tokenizer):
     hub_model = load_tf_model()
-    (model, labse_tokenizer) = convert_tf2_hub_model_to_pytorch()
+    (model, hf_tokenizer) = model_tokenizer
     model = model.eval()
 
-    pt_tokenized = labse_tokenizer(
+    pt_tokenized = hf_tokenizer(
         SIMILAR_SENTENCES[0], return_tensors="pt", **TOKENIZER_ATTRIBUTES
     )
     with no_grad():
         pt_labse_output = model(**pt_tokenized)
     pt_output = pt_labse_output.pooler_output
 
-    tf_tokenized = labse_tokenizer(
+    tf_tokenized = hf_tokenizer(
         SIMILAR_SENTENCES[0], return_tensors="tf", **TOKENIZER_ATTRIBUTES
     )
     tf_labse_output = hub_model(
