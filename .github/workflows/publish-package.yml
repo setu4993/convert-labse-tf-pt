@@ -1,11 +1,9 @@
 name: Publish Package
 
 on:
-  release:
-    types:
-      - created
-      - published
-      - released
+  push:
+    tags:
+      - "v*.*.*"
 
 jobs:
   publish:
