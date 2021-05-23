@@ -18,7 +18,13 @@ from loguru import logger
 import torch.nn.functional as F
 from tensorflow_hub import load
 from torch import from_numpy, matmul, no_grad
-from transformers import BertConfig, BertModel, BertTokenizerFast, TFBertModel
+from transformers import (
+    BertConfig,
+    BertModel,
+    BertTokenizerFast,
+    FlaxBertModel,
+    TFBertModel,
+)
 from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAttentions
 
 PATH = Union[str, Path]
@@ -62,6 +68,7 @@ def save_labse_models(
     output_path: PATH,
     save_tokenizer: bool = True,
     save_tf: bool = True,
+    save_flax: bool = True,
 ):
     output_path = Path(output_path) if isinstance(output_path, str) else output_path
 
@@ -82,6 +89,17 @@ def save_labse_models(
         )
         tf_model = TFBertModel.from_pretrained(pt_output_path, from_pt=True)
         tf_model.save_pretrained(tf_output_path)
+        del tf_model
+
+    if save_flax:
+        flax_output_path = output_path.joinpath("flax")
+        flax_output_path.mkdir(exist_ok=True, parents=True)
+        logger.info(
+            f"Loading HuggingFace compatible Flax LaBSE model from {pt_output_path}."
+        )
+        flax_model = FlaxBertModel.from_pretrained(pt_output_path, from_pt=True)
+        flax_model.save_pretrained(flax_output_path)
+        del flax_model
 
 
 def load_weights(model, tf_model):  # noqa: C901

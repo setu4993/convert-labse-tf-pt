@@ -108,9 +108,13 @@ def test_save_labse_models(tmp_path: Path, model_tokenizer: MODEL_TOKENIZER):
     assert tmp_path.joinpath("pt").joinpath("config.json").exists()
     assert tmp_path.joinpath("pt").joinpath("pytorch_model.bin").exists()
 
-    # T5 model
+    # TF model
     assert tmp_path.joinpath("tf").joinpath("config.json").exists()
     assert tmp_path.joinpath("tf").joinpath("tf_model.h5").exists()
+
+    # Flax model
+    assert tmp_path.joinpath("flax").joinpath("config.json").exists()
+    assert tmp_path.joinpath("flax").joinpath("flax_model.msgpack").exists()
 
     # Tokenizer.
     assert tmp_path.joinpath("tokenizer").joinpath("tokenizer_config.json").exists()
