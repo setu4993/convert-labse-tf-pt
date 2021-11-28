@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Tuple
 
 from numpy import allclose
 from pytest import fixture, mark
@@ -52,7 +51,7 @@ def hf_tokenizer(hub_model) -> BertTokenizerFast:
 
 
 @fixture(scope="session")
-def model_tokenizer() -> Tuple[BertModel, BertTokenizerFast]:
+def model_tokenizer() -> MODEL_TOKENIZER:
     return convert_tf2_hub_model_to_pytorch()
 
 
@@ -73,12 +72,12 @@ def tf_model_output(sentences, hub_model, hf_tokenizer):
     sentences = [sentences] if isinstance(sentences, str) else sentences
     tf_tokenized = hf_tokenizer(sentences, return_tensors="tf", padding="max_length")
     return hub_model(
-        [
-            tf_tokenized.input_ids,
-            tf_tokenized.attention_mask,
-            tf_tokenized.token_type_ids,
-        ]
-    )
+        {
+            "input_type_ids": tf_tokenized.token_type_ids,
+            "input_mask": tf_tokenized.attention_mask,
+            "input_word_ids": tf_tokenized.input_ids,
+        }
+    )["default"]
 
 
 def test_convert_tokenizer(hub_model):
@@ -147,7 +146,7 @@ def test_embeddings_converted_model(
 ):
     (model, hf_tokenizer) = model_tokenizer
     pt_output = get_embedding(sentences, model, hf_tokenizer).pooler_output
-    tf_output = tf_model_output(sentences, hub_model, hf_tokenizer)[0]
+    tf_output = tf_model_output(sentences, hub_model, hf_tokenizer)
 
     assert allclose(pt_output.detach().numpy(), tf_output.numpy(), atol=TOLERANCE)
 
@@ -169,8 +168,8 @@ def test_similarity_converted_model(
     (model, hf_tokenizer) = model_tokenizer
     pt_output1 = get_embedding(sentences1, model, hf_tokenizer).pooler_output
     pt_output2 = get_embedding(sentences2, model, hf_tokenizer).pooler_output
-    tf_output1 = tf_model_output(sentences1, hub_model, hf_tokenizer)[0]
-    tf_output2 = tf_model_output(sentences2, hub_model, hf_tokenizer)[0]
+    tf_output1 = tf_model_output(sentences1, hub_model, hf_tokenizer)
+    tf_output2 = tf_model_output(sentences2, hub_model, hf_tokenizer)
 
     pt_similarity = similarity(pt_output1, pt_output2)
     tf_similarity = similarity(
