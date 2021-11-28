@@ -1,6 +1,6 @@
 """
 This script can be used to convert a head-less TF2.x LaBSE model to PyTorch, as
-published on TensorFlow Hub: https://tfhub.dev/google/LaBSE/1.
+published on TensorFlow Hub: https://tfhub.dev/google/LaBSE/2.
 
 The script re-maps the TF2.x Bert weight names to the original names, so the model can
 be imported with Huggingface/transformer.
@@ -30,7 +30,7 @@ from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAtte
 PATH = Union[str, Path]
 MODEL_TOKENIZER = Tuple[BertModel, BertTokenizerFast]
 
-DEFAULT_MODEL = "https://tfhub.dev/google/LaBSE/1"
+DEFAULT_MODEL = "https://tfhub.dev/google/LaBSE/2"
 
 
 def load_tf_model(tf_saved_model: PATH = None):
