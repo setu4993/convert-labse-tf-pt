@@ -69,20 +69,25 @@ def save_labse_models(
     save_tokenizer: bool = True,
     save_tf: bool = True,
     save_flax: bool = True,
+    huggingface_path: bool = False,
 ):
     output_path = Path(output_path) if isinstance(output_path, str) else output_path
 
-    pt_output_path = output_path.joinpath("pt")
+    pt_output_path = output_path.joinpath("pt") if not huggingface_path else output_path
     pt_output_path.mkdir(exist_ok=True, parents=True)
     model.save_pretrained(pt_output_path)
 
     if save_tokenizer:
-        tknzr_output_path = output_path.joinpath("tokenizer")
-        tknzr_output_path.mkdir(exist_ok=True, parents=True)
-        tokenizer.save_pretrained(tknzr_output_path)
+        tokenizer_output_path = (
+            output_path.joinpath("tokenizer") if not huggingface_path else output_path
+        )
+        tokenizer_output_path.mkdir(exist_ok=True, parents=True)
+        tokenizer.save_pretrained(tokenizer_output_path)
 
     if save_tf:
-        tf_output_path = output_path.joinpath("tf")
+        tf_output_path = (
+            output_path.joinpath("tf") if not huggingface_path else output_path
+        )
         tf_output_path.mkdir(exist_ok=True, parents=True)
         logger.info(
             f"Loading HuggingFace compatible TF LaBSE model from {pt_output_path}."
@@ -92,7 +97,9 @@ def save_labse_models(
         del tf_model
 
     if save_flax:
-        flax_output_path = output_path.joinpath("flax")
+        flax_output_path = (
+            output_path.joinpath("flax") if not huggingface_path else output_path
+        )
         flax_output_path.mkdir(exist_ok=True, parents=True)
         logger.info(
             f"Loading HuggingFace compatible Flax LaBSE model from {pt_output_path}."
@@ -233,6 +240,7 @@ def convert_tf2_hub_model_to_pytorch(
     tf_saved_model: PATH = None,
     labse_config: PATH = None,
     output_path: PATH = None,
+    huggingface_path: bool = False,
 ) -> MODEL_TOKENIZER:
     logger.info("Loading pre-trained LaBSE TensorFlow SavedModel from TF Hub or disk.")
     tf_model = load_tf_model(tf_saved_model)
@@ -248,7 +256,9 @@ def convert_tf2_hub_model_to_pytorch(
 
     if output_path:
         logger.info(f"Saving model and tokenizer to {output_path}.")
-        save_labse_models(model, tokenizer, output_path)
+        save_labse_models(
+            model, tokenizer, output_path, huggingface_path=huggingface_path
+        )
     else:
         logger.warning(
             "output_path not set, skipping saving model and tokenizer to disk."
@@ -305,9 +315,15 @@ def main():
         help="Path where the model and tokenizer should be output.",
         default=None,
     )
+    parser.add_argument(
+        "--huggingface_path",
+        help="Should models be exported in HuggingFace default folder structure?",
+        default=False,
+        action="store_true",
+    )
     args = parser.parse_args()
     convert_tf2_hub_model_to_pytorch(
-        args.tf_saved_model, args.labse_config, args.output_path
+        args.tf_saved_model, args.labse_config, args.output_path, args.huggingface_path
     )
 
 
