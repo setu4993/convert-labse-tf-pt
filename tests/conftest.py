@@ -1,7 +1,8 @@
+from huggingface_hub import cached_download, hf_hub_url
 from pytest import fixture
 
 from bert.tokenization.bert_tokenization import FullTokenizer
-from transformers import BertTokenizerFast
+from transformers import BertModel, BertTokenizerFast
 
 from convert_labse_tf_pt import (
     MODEL_TOKENIZER,
@@ -48,3 +49,16 @@ def model_tokenizer() -> MODEL_TOKENIZER:
 )
 def sentences(request):
     return request.param
+
+
+@fixture(scope="session")
+def v1_labse_model() -> BertModel:
+    config_location = cached_download(
+        hf_hub_url(repo_id="setu4993/LaBSE", revision="v1", filename="config.json")
+    )
+    model_location = cached_download(
+        hf_hub_url(
+            repo_id="setu4993/LaBSE", revision="v1", filename="pytorch_model.bin"
+        )
+    )
+    return BertModel.from_pretrained(model_location, config=config_location)

@@ -32,6 +32,7 @@ def test_embeddings_all_converted_models(
     sentences,
     hub_model,
     model_tokenizer,
+    v1_labse_model,
     tmp_path,
 ):
     # Create models.
@@ -43,14 +44,15 @@ def test_embeddings_all_converted_models(
     # TF Hub output.
     hub_output = tf_model_output(sentences, hub_model, hf_tokenizer)
 
+    # v1 model output.
+    v1_output = get_embedding(sentences, v1_labse_model, hf_tokenizer).pooler_output
+
     pt_output = get_embedding(sentences, pt_model, hf_tokenizer).pooler_output
 
-    # tf_model = TFBertModel.from_pretrained(tmp_path)
     tf_output = TFBertModel.from_pretrained(tmp_path)(
         hf_tokenizer(sentences, return_tensors="tf", padding="max_length")
     ).pooler_output
 
-    # flax_model = FlaxBertModel.from_pretrained(tmp_path)
     flax_output = FlaxBertModel.from_pretrained(tmp_path)(
         **hf_tokenizer(sentences, return_tensors="jax", padding="max_length")
     ).pooler_output
@@ -58,6 +60,7 @@ def test_embeddings_all_converted_models(
     # Verify all combinations produce equivalent output embeddings.
     numpy_arrays = [
         hub_output.numpy(),
+        v1_output.detach().numpy(),
         pt_output.detach().numpy(),
         tf_output.numpy(),
         flax_output,
