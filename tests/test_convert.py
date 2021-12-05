@@ -8,7 +8,6 @@ from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAtte
 
 from convert_labse_tf_pt import (
     MODEL_TOKENIZER,
-    convert_tf2_hub_model_to_pytorch,
     get_embedding,
     get_labse_tokenizer,
     save_labse_models,
@@ -23,8 +22,8 @@ def test_convert_tokenizer(hub_model):
     assert isinstance(tokenizer, BertTokenizerFast)
 
 
-def test_convert_model():
-    (model, tokenizer) = convert_tf2_hub_model_to_pytorch()
+def test_convert_model(model_tokenizer):
+    (model, tokenizer) = model_tokenizer
     assert isinstance(model, BertModel)
     assert isinstance(tokenizer, BertTokenizerFast)
 
