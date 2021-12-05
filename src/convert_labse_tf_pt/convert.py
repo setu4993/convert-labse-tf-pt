@@ -31,14 +31,22 @@ PATH = Union[str, Path]
 MODEL_TOKENIZER = Tuple[BertModel, BertTokenizerFast]
 
 DEFAULT_MODEL = "https://tfhub.dev/google/LaBSE/2"
+DEFAULT_SMALLER_MODEL = "https://tfhub.dev/jeongukjae/smaller_LaBSE_15lang/1"
+SMALLER_VOCAB = Path(__file__).parent.joinpath(
+    "data",
+    "smaller_vocab",
+    "vocab-en-fr-es-de-zh-ar-zh_classical-it-ja-ko-nl-pl-pt-th-tr-ru.txt",
+)
 
 
-def load_tf_model(tf_saved_model: PATH = None):
-    tf_saved_model = tf_saved_model or DEFAULT_MODEL
+def load_tf_model(tf_saved_model: PATH = None, smaller: bool = False):
+    default_model = DEFAULT_MODEL if not smaller else DEFAULT_SMALLER_MODEL
+    tf_saved_model = tf_saved_model or default_model
+    logger.info(f"Loading TF LaBSE model from {tf_saved_model}...")
     return load(tf_saved_model)
 
 
-def get_labse_model(labse_config: PATH = None) -> BertModel:
+def get_labse_model(labse_config: PATH = None, smaller: bool = False) -> BertModel:
     if labse_config:
         labse_config = (
             Path(labse_config) if isinstance(labse_config, str) else labse_config
@@ -47,14 +55,18 @@ def get_labse_model(labse_config: PATH = None) -> BertModel:
         config = BertConfig.from_json_file(labse_config)
     else:
         config = BertConfig.from_pretrained("bert-base-uncased")
-        config.vocab_size = 501153
+        config.vocab_size = 501153 if not smaller else 173347
     return BertModel(config)
 
 
-def get_labse_tokenizer(tf_model) -> BertTokenizerFast:
+def get_labse_tokenizer(tf_model, smaller: bool = False) -> BertTokenizerFast:
+    vocab_file = (
+        tf_model.vocab_file.asset_path.numpy() if not smaller else SMALLER_VOCAB
+    )
+    logger.info(f"Using vocab file {vocab_file} for HF LaBSE tokenizer...")
     tokenizer = BertTokenizerFast(
-        tf_model.vocab_file.asset_path.numpy(),
-        do_lower_case=tf_model.do_lower_case.numpy().item(),
+        vocab_file,
+        do_lower_case=False,
     )
     # Use the length from the positional_embeddings layer.
     # Layer name: "position_embedding/embeddings:0"
@@ -241,18 +253,19 @@ def convert_tf2_hub_model_to_pytorch(
     labse_config: PATH = None,
     output_path: PATH = None,
     huggingface_path: bool = False,
+    smaller: bool = False,
 ) -> MODEL_TOKENIZER:
     logger.info("Loading pre-trained LaBSE TensorFlow SavedModel from TF Hub or disk.")
-    tf_model = load_tf_model(tf_saved_model)
+    tf_model = load_tf_model(tf_saved_model, smaller=smaller)
 
     logger.info("Creating empty LaBSE model.")
-    model = get_labse_model(labse_config)
+    model = get_labse_model(labse_config, smaller=smaller)
 
     logger.info("Loading weights from TF SavedModel.")
     model = load_weights(model, tf_model)
 
     logger.info("Initializing LaBSE tokenizer.")
-    tokenizer = get_labse_tokenizer(tf_model)
+    tokenizer = get_labse_tokenizer(tf_model, smaller=smaller)
 
     if output_path:
         logger.info(f"Saving model and tokenizer to {output_path}.")
@@ -321,9 +334,19 @@ def main():
         default=False,
         action="store_true",
     )
+    parser.add_argument(
+        "--smaller",
+        help="Convert smaller-LaBSE model?",
+        default=False,
+        action="store_true",
+    )
     args = parser.parse_args()
     convert_tf2_hub_model_to_pytorch(
-        args.tf_saved_model, args.labse_config, args.output_path, args.huggingface_path
+        args.tf_saved_model,
+        args.labse_config,
+        args.output_path,
+        args.huggingface_path,
+        args.smaller,
     )
 
 
