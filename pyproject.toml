@@ -24,7 +24,7 @@ flax = "^0.3.4"
 [tool.poetry.dev-dependencies]
 pytest = "^6.0"
 black = "^20.8b1"
-ipython = "^7.19.0"
+ipython = "^7.31.1"
 ipykernel = "^5.4.2"
 bert-for-tf2 = "^0.14.7"
 isort = "^5.7.0"
