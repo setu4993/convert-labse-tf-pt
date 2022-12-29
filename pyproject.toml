@@ -38,8 +38,6 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.isort]
 profile = "black"
-sections = ["FUTURE", "STDLIB", "THIRDPARTY", "ML", "FIRSTPARTY", "LOCALFOLDER"]
-known_ml=["torch", "tensorflow", "tensorflow_hub", "transformers", "bert"]
 
 [tool.pytest.ini_options]
 pythonpath = ["./src/"]
