@@ -12,7 +12,7 @@ packages = [{ include = "convert_labse_tf_pt", from = "src" }]
 include = ["LICENSE"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8,<4.0"
 torch = ">1.7"
 transformers = "^4.22.0"
 tensorflow = "^2.4.0"
