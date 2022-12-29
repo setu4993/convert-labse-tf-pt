@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from numpy import allclose
-
 from torch import Tensor, ones, rand
 from transformers import BertModel, BertTokenizerFast
 from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAttentions

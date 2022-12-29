@@ -1,7 +1,6 @@
+from bert.tokenization.bert_tokenization import FullTokenizer
 from huggingface_hub import cached_download, hf_hub_url
 from pytest import fixture
-
-from bert.tokenization.bert_tokenization import FullTokenizer
 from transformers import BertModel, BertTokenizerFast
 
 from convert_labse_tf_pt import (

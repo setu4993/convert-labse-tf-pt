@@ -1,6 +1,5 @@
 from numpy import allclose
 from pytest import mark
-
 from torch import from_numpy
 from transformers import FlaxBertModel, TFBertModel
 

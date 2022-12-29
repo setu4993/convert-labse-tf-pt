@@ -13,9 +13,8 @@ from pathlib import Path
 from re import match
 from typing import List, Tuple, Union
 
-from loguru import logger
-
 import torch.nn.functional as F
+from loguru import logger
 from tensorflow_hub import load
 from torch import from_numpy, matmul, no_grad
 from transformers import (
