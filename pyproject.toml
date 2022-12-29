@@ -22,18 +22,19 @@ loguru = "^0.5.3"
 flax = "^0.3.4"
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.0"
 black = "^20.8b1"
 ipython = "^7.31.1"
 ipykernel = "^5.4.2"
-bert-for-tf2 = "^0.14.7"
 isort = "^5.7.0"
-pytest-pythonpath = "^0.7.3"
 flake8 = "^3.8.4"
 pre-commit = "^2.9.3"
 
 [tool.poetry.scripts]
 convert_labse = "convert_labse_tf_pt.convert:main"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.2.0"
+bert-for-tf2 = "^0.14.9"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -45,4 +46,4 @@ sections = ["FUTURE", "STDLIB", "THIRDPARTY", "ML", "FIRSTPARTY", "LOCALFOLDER"]
 known_ml=["torch", "tensorflow", "tensorflow_hub", "transformers", "bert"]
 
 [tool.pytest.ini_options]
-python_paths = ["src/"]
+pythonpath = ["./src/"]
