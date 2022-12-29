@@ -87,6 +87,7 @@ def save_labse_models(
     pt_output_path = output_path.joinpath("pt") if not huggingface_path else output_path
     pt_output_path.mkdir(exist_ok=True, parents=True)
     model.save_pretrained(pt_output_path)
+    logger.info(f"Saved PyTorch model to {pt_output_path}.")
 
     if save_tokenizer:
         tokenizer_output_path = (
@@ -94,6 +95,7 @@ def save_labse_models(
         )
         tokenizer_output_path.mkdir(exist_ok=True, parents=True)
         tokenizer.save_pretrained(tokenizer_output_path)
+        logger.info(f"Saved tokenizer to {tokenizer_output_path}.")
 
     if save_tf:
         tf_output_path = (
@@ -106,6 +108,7 @@ def save_labse_models(
         tf_model = TFBertModel.from_pretrained(pt_output_path, from_pt=True)
         tf_model.save_pretrained(tf_output_path)
         del tf_model
+        logger.info(f"Saved TF model to {tf_output_path}.")
 
     if save_flax:
         flax_output_path = (
@@ -118,6 +121,7 @@ def save_labse_models(
         flax_model = FlaxBertModel.from_pretrained(pt_output_path, from_pt=True)
         flax_model.save_pretrained(flax_output_path)
         del flax_model
+        logger.info(f"Saved Flax model to {flax_output_path}.")
 
 
 def load_weights(model, tf_model):  # noqa: C901
@@ -271,6 +275,7 @@ def convert_tf2_hub_model_to_pytorch(
         save_labse_models(
             model, tokenizer, output_path, huggingface_path=huggingface_path
         )
+        logger.info(f"Saved model and tokenizer to {output_path}.")
     else:
         logger.warning(
             "output_path not set, skipping saving model and tokenizer to disk."
