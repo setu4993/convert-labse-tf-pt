@@ -124,9 +124,9 @@ def save_labse_models(
         logger.info(f"Saved Flax model to {flax_output_path}.")
 
 
-def load_weights(model, tf_model):  # noqa: C901
+def load_labse_weights(model, tf_model):  # noqa: C901
     # Convert layers.
-    logger.info("Converting weights...")
+    logger.info("Converting LaBSE weights...")
     for var in tf_model.variables:
         full_name, array = var.name, var.numpy()
         name = full_name.replace(":0", "").split("/")
@@ -265,7 +265,7 @@ def convert_tf2_hub_model_to_pytorch(
     model = get_labse_model(labse_config, smaller=smaller)
 
     logger.info("Loading weights from TF SavedModel.")
-    model = load_weights(model, tf_model)
+    model = load_labse_weights(model, tf_model)
 
     logger.info("Initializing LaBSE tokenizer.")
     tokenizer = get_labse_tokenizer(tf_model, smaller=smaller)
