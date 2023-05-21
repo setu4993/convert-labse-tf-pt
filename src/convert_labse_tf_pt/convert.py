@@ -12,8 +12,8 @@ from pathlib import Path
 from re import match
 from typing import List, Tuple, Union
 
-import torch.nn.functional as F
 import tensorflow_text  # noqa: F401
+import torch.nn.functional as F
 from loguru import logger
 from tensorflow_hub import load
 from torch import from_numpy, matmul, no_grad
@@ -21,12 +21,19 @@ from transformers import (
     BertConfig,
     BertModel,
     BertTokenizerFast,
-    PretrainedConfig,
     FlaxBertModel,
+    PretrainedConfig,
     TFBertModel,
 )
 from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAttentions
-from convert_labse_tf_pt.configurations import LEALLABase, LEALLALarge, LEALLASmall, LaBSE, SmallerLaBSE
+
+from convert_labse_tf_pt.configurations import (
+    LaBSE,
+    LEALLABase,
+    LEALLALarge,
+    LEALLASmall,
+    SmallerLaBSE,
+)
 
 PATH = Union[str, Path]
 MODEL_TOKENIZER = Tuple[BertModel, BertTokenizerFast]

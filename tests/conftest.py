@@ -10,7 +10,6 @@ from convert_labse_tf_pt import (
     load_tf_model,
 )
 from convert_labse_tf_pt.configurations import LaBSE
-
 from tests.helpers import Sentences
 
 TF_SAVED_MODEL = None

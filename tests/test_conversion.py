@@ -36,9 +36,7 @@ def test_embeddings_all_converted_models(
 ):
     # Create models.
     (pt_model, hf_tokenizer) = model_tokenizer
-    save_labse_models(
-        pt_model, hf_tokenizer, output_path=tmp_path, huggingface_path=True
-    )
+    save_labse_models(pt_model, hf_tokenizer, output_path=tmp_path, huggingface_path=True)
 
     # TF Hub output.
     hub_output = tf_model_output(sentences, hub_model, hf_tokenizer)
@@ -90,7 +88,5 @@ def test_similarity_converted_model(
     tf_output2 = tf_model_output(sentences2, hub_model, hf_tokenizer)
 
     pt_similarity = similarity(pt_output1, pt_output2)
-    tf_similarity = similarity(
-        from_numpy(tf_output1.numpy()), from_numpy(tf_output2.numpy())
-    )
+    tf_similarity = similarity(from_numpy(tf_output1.numpy()), from_numpy(tf_output2.numpy()))
     assert allclose(pt_similarity, tf_similarity, atol=TOLERANCE)

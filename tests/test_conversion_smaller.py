@@ -12,7 +12,6 @@ from convert_labse_tf_pt import (
     similarity,
 )
 from convert_labse_tf_pt.configurations import SmallerLaBSE
-
 from tests.helpers import Sentences, tf_model_output
 
 TOLERANCE = 0.01

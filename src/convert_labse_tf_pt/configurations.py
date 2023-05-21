@@ -1,7 +1,6 @@
-from dataclasses import dataclass, asdict
-from typing import Dict
-
+from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Dict
 
 
 @dataclass
