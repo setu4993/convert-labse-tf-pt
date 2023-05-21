@@ -8,7 +8,6 @@ be imported with Huggingface/transformer.
 This script is adapted from HuggingFace's BERT conversion script: https://github.com/huggingface/transformers/blob/master/src/transformers/models/bert/convert_bert_original_tf2_checkpoint_to_pytorch.py
 """
 from argparse import ArgumentParser
-from json import loads
 from pathlib import Path
 from re import match
 from typing import List, Tuple, Union
@@ -21,10 +20,12 @@ from transformers import (
     BertConfig,
     BertModel,
     BertTokenizerFast,
+    PretrainedConfig,
     FlaxBertModel,
     TFBertModel,
 )
 from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAttentions
+from convert_labse_tf_pt.configurations import LaBSEConfig, SmallerLaBSEConfig
 
 PATH = Union[str, Path]
 MODEL_TOKENIZER = Tuple[BertModel, BertTokenizerFast]
@@ -45,17 +46,16 @@ def load_tf_model(tf_saved_model: PATH = None, smaller: bool = False):
     return load(tf_saved_model)
 
 
-def get_labse_model(labse_config: PATH = None, smaller: bool = False) -> BertModel:
+def get_labse_model(labse_config: PATH = None, smaller: bool = False) -> Tuple[PretrainedConfig, BertModel]:
     if labse_config:
-        labse_config = (
-            Path(labse_config) if isinstance(labse_config, str) else labse_config
-        )
+        labse_config = Path(labse_config) if isinstance(labse_config, str) else labse_config
         logger.info(f"Loading model based on config from {labse_config}...")
         config = BertConfig.from_json_file(labse_config)
     else:
+        convert_config = LaBSEConfig() if not smaller else SmallerLaBSEConfig()
         config = BertConfig.from_pretrained("bert-base-uncased")
-        config.vocab_size = 501153 if not smaller else 173347
-    return BertModel(config)
+        config.update(convert_config.dict())
+    return (config, BertModel(config))
 
 
 def get_labse_tokenizer(tf_model, smaller: bool = False) -> BertTokenizerFast:
@@ -258,11 +258,11 @@ def convert_tf2_hub_model_to_pytorch(
     huggingface_path: bool = False,
     smaller: bool = False,
 ) -> MODEL_TOKENIZER:
+    logger.info("Creating empty LaBSE model.")
+    config, model = get_labse_model(labse_config, smaller=smaller)
+
     logger.info("Loading pre-trained LaBSE TensorFlow SavedModel from TF Hub or disk.")
     tf_model = load_tf_model(tf_saved_model, smaller=smaller)
-
-    logger.info("Creating empty LaBSE model.")
-    model = get_labse_model(labse_config, smaller=smaller)
 
     logger.info("Loading weights from TF SavedModel.")
     model = load_labse_weights(model, tf_model)
