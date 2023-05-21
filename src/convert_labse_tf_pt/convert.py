@@ -284,7 +284,7 @@ def get_embedding(
     elif not model:
         (model, _) = convert_tf2_hub_model_to_pytorch()
     elif not tokenizer:
-        tokenizer = get_labse_tokenizer(load_tf_model())
+        tokenizer = get_labse_tokenizer()
 
     if isinstance(sentences, str):
         sentences = [sentences]
