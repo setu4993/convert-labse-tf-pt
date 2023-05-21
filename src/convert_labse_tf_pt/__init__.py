@@ -10,4 +10,4 @@ from .convert import (
     similarity,
 )
 
-from .configurations import LaBSE, SmallerLaBSE
+from .configurations import LaBSE, SmallerLaBSE, LEALLABase, LEALLALarge, LEALLASmall

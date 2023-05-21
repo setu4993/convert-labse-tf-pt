@@ -13,6 +13,7 @@ from re import match
 from typing import List, Tuple, Union
 
 import torch.nn.functional as F
+import tensorflow_text  # noqa: F401
 from loguru import logger
 from tensorflow_hub import load
 from torch import from_numpy, matmul, no_grad
@@ -25,7 +26,7 @@ from transformers import (
     TFBertModel,
 )
 from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAttentions
-from convert_labse_tf_pt.configurations import LaBSE, SmallerLaBSE
+from convert_labse_tf_pt.configurations import LEALLABase, LEALLALarge, LEALLASmall, LaBSE, SmallerLaBSE
 
 PATH = Union[str, Path]
 MODEL_TOKENIZER = Tuple[BertModel, BertTokenizerFast]
@@ -76,44 +77,31 @@ def save_labse_models(
     logger.info(f"Saved PyTorch model to {pt_output_path}.")
 
     if save_tokenizer:
-        tokenizer_output_path = (
-            output_path.joinpath("tokenizer") if not huggingface_path else output_path
-        )
+        tokenizer_output_path = output_path.joinpath("tokenizer") if not huggingface_path else output_path
         tokenizer_output_path.mkdir(exist_ok=True, parents=True)
         tokenizer.save_pretrained(tokenizer_output_path)
         logger.info(f"Saved tokenizer to {tokenizer_output_path}.")
 
     if save_tf:
-        tf_output_path = (
-            output_path.joinpath("tf") if not huggingface_path else output_path
-        )
+        tf_output_path = output_path.joinpath("tf") if not huggingface_path else output_path
         tf_output_path.mkdir(exist_ok=True, parents=True)
-        logger.info(
-            f"Loading HuggingFace compatible TF LaBSE model from {pt_output_path}."
-        )
+        logger.info(f"Loading HuggingFace compatible TF LaBSE model from {pt_output_path}.")
         tf_model = TFBertModel.from_pretrained(pt_output_path, from_pt=True)
         tf_model.save_pretrained(tf_output_path)
         del tf_model
         logger.info(f"Saved TF model to {tf_output_path}.")
 
     if save_flax:
-        flax_output_path = (
-            output_path.joinpath("flax") if not huggingface_path else output_path
-        )
+        flax_output_path = output_path.joinpath("flax") if not huggingface_path else output_path
         flax_output_path.mkdir(exist_ok=True, parents=True)
-        logger.info(
-            f"Loading HuggingFace compatible Flax LaBSE model from {pt_output_path}."
-        )
+        logger.info(f"Loading HuggingFace compatible Flax LaBSE model from {pt_output_path}.")
         flax_model = FlaxBertModel.from_pretrained(pt_output_path, from_pt=True)
         flax_model.save_pretrained(flax_output_path)
         del flax_model
         logger.info(f"Saved Flax model to {flax_output_path}.")
 
 
-def load_labse_weights(tf_model, pretrained_config: PretrainedConfig):  # noqa: C901
-    logger.info("Creating empty model from pretrained config...")
-    model = BertModel(pretrained_config)
-    # Convert layers.
+def load_labse_weights(tf_model, model: BertModel) -> BertModel:  # noqa: C901
     logger.info("Converting LaBSE weights...")
     for var in tf_model.variables:
         full_name, array = var.name, var.numpy()
@@ -222,9 +210,9 @@ def load_labse_weights(tf_model, pretrained_config: PretrainedConfig):  # noqa: 
 
         # For certain layers reshape is necessary.
         trace = ".".join(trace)
-        if match(
-            r"(\S+)\.attention\.self\.(key|value|query)\.(bias|weight)", trace
-        ) or match(r"(\S+)\.attention\.output\.dense\.weight", trace):
+        if match(r"(\S+)\.attention\.self\.(key|value|query)\.(bias|weight)", trace) or match(
+            r"(\S+)\.attention\.output\.dense\.weight", trace
+        ):
             array = array.reshape(pointer.data.shape)
         if "kernel" in full_name:
             array = array.transpose()
@@ -239,15 +227,109 @@ def load_labse_weights(tf_model, pretrained_config: PretrainedConfig):  # noqa: 
     return model
 
 
+def load_lealla_weights(tf_model, model: BertModel) -> BertModel:
+    logger.info("Converting LEALLA weights...")
+    for var in tf_model.variables:
+        full_name, array = var.name, var.numpy()
+        name = full_name.replace(":0", "").split("/")
+
+        # Corresponds to `do_lower_case` attribute of the model.
+        if full_name.startswith("Variable"):
+            continue
+        pointer = model
+        trace = []
+        for i, m_name in enumerate(name):
+            # All `name`s start with `student_bert` which is just a container.
+            if m_name == "student_bert":
+                continue
+            elif match(r"layer_\d+", m_name):
+                layer_num = int(m_name.split("_")[-1])
+                trace.extend(["layer", str(layer_num)])
+                pointer = getattr(pointer, "layer")
+                pointer = pointer[layer_num]
+            # Embeddings.
+            elif "embedding" in m_name:
+                if m_name == "embeddings":
+                    trace.append("embeddings")
+                    pointer = getattr(pointer, "embeddings")
+                    continue
+                elif m_name == "word_embeddings":
+                    trace.append("word_embeddings")
+                    pointer = getattr(pointer, "word_embeddings")
+                elif m_name == "position_embeddings":
+                    trace.append("position_embeddings")
+                    pointer = getattr(pointer, "position_embeddings")
+                # `in` because we need to match both `token_type_embeddings` and `token_type_embeddings_real`.
+                elif "token_type_embeddings" in m_name:
+                    trace.append("token_type_embeddings")
+                    pointer = getattr(pointer, "token_type_embeddings")
+                else:
+                    raise ValueError(f"Unknown embedding layer with name {full_name}")
+                trace.append("weight")
+                pointer = getattr(pointer, "weight")
+            # Layers with equivalent names.
+            elif m_name in [
+                "encoder",
+                "LayerNorm",
+                "attention",
+                "self",
+                "key",
+                "query",
+                "value",
+                "intermediate",
+                "output",
+                "dense",
+                "pooler",
+            ]:
+                trace.extend([m_name])
+                pointer = getattr(pointer, m_name)
+            # Weights, biases.
+            elif m_name in ["bias", "beta"]:
+                trace.append("bias")
+                pointer = getattr(pointer, "bias")
+            elif m_name in ["kernel", "gamma"]:
+                trace.append("weight")
+                pointer = getattr(pointer, "weight")
+            else:
+                logger.warning(f"Ignored {m_name}")
+
+        # For certain layers reshape is necessary.
+        trace = ".".join(trace)
+        if match(r"(\S+)\.attention\.self\.(key|value|query)\.(bias|weight)", trace) or match(
+            r"(\S+)\.attention\.output\.dense\.weight", trace
+        ):
+            array = array.reshape(pointer.data.shape)
+        if "kernel" in full_name:
+            array = array.transpose()
+        if pointer.shape == array.shape:
+            pointer.data = from_numpy(array)
+        else:
+            raise ValueError(
+                f"Shape mismatch in layer {full_name}: Model expects shape "
+                f"{pointer.shape} but layer contains shape: {array.shape}"
+            )
+        logger.info(f"Successfully set variable {full_name} to PyTorch layer {trace}")
+    return model
+
+
+def load_weights(tf_model, pretrained_config, conversion_config):
+    logger.info("Creating empty model from pretrained config...")
+    model = BertModel(pretrained_config)
+    if "labse" in conversion_config.repo.lower():
+        return load_labse_weights(tf_model, model)
+    elif "lealla" in conversion_config.repo.lower():
+        return load_lealla_weights(tf_model, model)
+    else:
+        raise ValueError(f"Unknown repo {conversion_config.repo}.")
+
+
 def convert_tf2_hub_model_to_pytorch(
+    conversion_config: LaBSE = LaBSE(),
     tf_saved_model: PATH = None,
     labse_config: PATH = None,
     output_path: PATH = None,
     huggingface_path: bool = False,
-    smaller: bool = False,
 ) -> MODEL_TOKENIZER:
-    conversion_config = LaBSE() if not smaller else SmallerLaBSE()
-
     logger.info("Creating base configuration.")
     pretrained_config = get_pretrained_config(conversion_config, labse_config)
 
@@ -255,21 +337,17 @@ def convert_tf2_hub_model_to_pytorch(
     tf_model = load_tf_model(tf_saved_model or conversion_config.tf_hub_link)
 
     logger.info("Loading weights from TF SavedModel.")
-    model = load_labse_weights(tf_model, pretrained_config)
+    model = load_weights(tf_model, pretrained_config, conversion_config)
 
     logger.info("Initializing LaBSE tokenizer.")
     tokenizer = get_labse_tokenizer(conversion_config)
 
     if output_path:
         logger.info(f"Saving model and tokenizer to {output_path}.")
-        save_labse_models(
-            model, tokenizer, output_path, huggingface_path=huggingface_path
-        )
+        save_labse_models(model, tokenizer, output_path, huggingface_path=huggingface_path)
         logger.info(f"Saved model and tokenizer to {output_path}.")
     else:
-        logger.warning(
-            "output_path not set, skipping saving model and tokenizer to disk."
-        )
+        logger.warning("output_path not set, skipping saving model and tokenizer to disk.")
 
     return (model, tokenizer)
 
@@ -303,7 +381,7 @@ def similarity(embeddings_1, embeddings_2):
     return matmul(normalized_embeddings_1, normalized_embeddings_2.transpose(0, 1))
 
 
-def main():
+def get_base_arg_parser() -> ArgumentParser:
     parser = ArgumentParser()
     parser.add_argument(
         "--tf_saved_model",
@@ -312,9 +390,9 @@ def main():
         default=None,
     )
     parser.add_argument(
-        "--labse_config",
+        "--config",
         type=str,
-        help="JSON config file corresponding to the LaBSE model. This file specifies the model architecture.",
+        help="JSON config file corresponding to the LaBSE model config. This file specifies the model architecture.",
     )
     parser.add_argument(
         "--output_path",
@@ -328,6 +406,11 @@ def main():
         default=False,
         action="store_true",
     )
+    return parser
+
+
+def convert_labse():
+    parser = get_base_arg_parser()
     parser.add_argument(
         "--smaller",
         help="Convert smaller-LaBSE model?",
@@ -335,14 +418,38 @@ def main():
         action="store_true",
     )
     args = parser.parse_args()
+    conversion_config = LaBSE() if not args.smaller else SmallerLaBSE()
+
     convert_tf2_hub_model_to_pytorch(
+        conversion_config,
         args.tf_saved_model,
-        args.labse_config,
+        args.config,
         args.output_path,
         args.huggingface_path,
-        args.smaller,
     )
 
 
-if __name__ == "__main__":
-    main()
+def convert_lealla():
+    parser = get_base_arg_parser()
+    parser.add_argument(
+        "--size",
+        help="Size of the model to convert. One of 'small', 'base', 'large'.",
+        default="small",
+        type=str,
+    )
+    args = parser.parse_args()
+    if args.size == "small":
+        conversion_config = LEALLASmall()
+    elif args.size == "base":
+        conversion_config = LEALLABase()
+    elif args.size == "large":
+        conversion_config = LEALLALarge()
+    else:
+        raise ValueError(f"Unknown model size {args.size}.")
+    convert_tf2_hub_model_to_pytorch(
+        conversion_config,
+        args.tf_saved_model,
+        args.config,
+        args.output_path,
+        args.huggingface_path,
+    )

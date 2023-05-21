@@ -47,3 +47,41 @@ class SmallerLaBSE(LaBSE):
     size: str = "small"
     tf_hub_link: str = "https://tfhub.dev/jeongukjae/smaller_LaBSE_15lang/1"
 
+
+@dataclass
+class LEALLALarge(LaBSE):
+    repo: str = "LEALLA-large"
+
+    hidden_size: int = 256
+    intermediate_size: int = 1024
+    num_attention_heads: int = 8
+    num_hidden_layers: int = 24
+
+    size: str = "large"
+    tf_hub_link: str = "https://tfhub.dev/google/LEALLA/LEALLA-large/1"
+
+
+@dataclass
+class LEALLABase(LaBSE):
+    repo: str = "LEALLA-base"
+
+    hidden_size: int = 192
+    intermediate_size: int = 768
+    num_attention_heads: int = 12
+    num_hidden_layers: int = 24
+
+    size: str = "base"
+    tf_hub_link: str = "https://tfhub.dev/google/LEALLA/LEALLA-base/1"
+
+
+@dataclass
+class LEALLASmall(LaBSE):
+    repo: str = "LEALLA-small"
+
+    hidden_size: int = 128
+    intermediate_size: int = 512
+    num_attention_heads: int = 8
+    num_hidden_layers: int = 24
+
+    size: str = "small"
+    tf_hub_link: str = "https://tfhub.dev/google/LEALLA/LEALLA-small/1"
