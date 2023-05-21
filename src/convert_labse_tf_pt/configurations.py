@@ -16,7 +16,7 @@ class LaBSE:
     num_hidden_layers: int = 12
 
     # Extra fields.
-    vocab_file: Path = Path(".").joinpath(
+    vocab_file: Path = Path(__file__).parent.joinpath(
         "data",
         "labse_vocab",
         "cased_vocab.txt",
@@ -27,7 +27,7 @@ class LaBSE:
     def dict(self) -> Dict[str, int]:
         dct = asdict(self)
         # Drop fields that are not supported by `BertConfig`.
-        dct.pop("name")
+        dct.pop("repo")
         dct.pop("vocab_file")
         dct.pop("size")
         dct.pop("tf_hub_link")
@@ -39,7 +39,7 @@ class SmallerLaBSE(LaBSE):
     repo: str = "smaller-LaBSE"
     vocab_size: int = 173347
 
-    vocab_file: Path = Path(".").parent.joinpath(
+    vocab_file: Path = Path(__file__).parent.joinpath(
         "data",
         "smaller_vocab",
         "vocab-en-fr-es-de-zh-ar-zh_classical-it-ja-ko-nl-pl-pt-th-tr-ru.txt",

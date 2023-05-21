@@ -11,24 +11,21 @@ from convert_labse_tf_pt import (
     save_labse_models,
     similarity,
 )
+from convert_labse_tf_pt.configurations import SmallerLaBSE
 
-from .helpers import Sentences, tf_model_output
+from tests.helpers import Sentences, tf_model_output
 
 TOLERANCE = 0.01
-
-TF_SMALLER_SAVED_MODEL = None
 
 
 @fixture(scope="session")
 def smaller_hub_model():
-    return load_tf_model(tf_saved_model=TF_SMALLER_SAVED_MODEL, smaller=True)
+    return load_tf_model(tf_saved_model=SmallerLaBSE().tf_hub_link)
 
 
 @fixture(scope="session")
 def smaller_model_tokenizer() -> MODEL_TOKENIZER:
-    return convert_tf2_hub_model_to_pytorch(
-        tf_saved_model=TF_SMALLER_SAVED_MODEL, smaller=True
-    )
+    return convert_tf2_hub_model_to_pytorch(tf_saved_model=None, smaller=True)
 
 
 def test_embeddings_converted_model(
@@ -38,9 +35,7 @@ def test_embeddings_converted_model(
 ):
     (model, hf_tokenizer) = smaller_model_tokenizer
     pt_output = get_embedding(sentences, model, hf_tokenizer).pooler_output
-    tf_output = tf_model_output(
-        sentences, smaller_hub_model, hf_tokenizer, smaller=True
-    )
+    tf_output = tf_model_output(sentences, smaller_hub_model, hf_tokenizer, smaller=True)
 
     assert allclose(pt_output.detach().numpy(), tf_output.numpy(), atol=TOLERANCE)
 
@@ -53,14 +48,10 @@ def test_embeddings_all_converted_models(
 ):
     # Create models.
     (pt_model, hf_tokenizer) = smaller_model_tokenizer
-    save_labse_models(
-        pt_model, hf_tokenizer, output_path=tmp_path, huggingface_path=True
-    )
+    save_labse_models(pt_model, hf_tokenizer, output_path=tmp_path, huggingface_path=True)
 
     # TF Hub output.
-    hub_output = tf_model_output(
-        sentences, smaller_hub_model, hf_tokenizer, smaller=True
-    )
+    hub_output = tf_model_output(sentences, smaller_hub_model, hf_tokenizer, smaller=True)
 
     pt_output = get_embedding(sentences, pt_model, hf_tokenizer).pooler_output
 
@@ -101,15 +92,9 @@ def test_similarity_converted_model(
     (model, hf_tokenizer) = smaller_model_tokenizer
     pt_output1 = get_embedding(sentences1, model, hf_tokenizer).pooler_output
     pt_output2 = get_embedding(sentences2, model, hf_tokenizer).pooler_output
-    tf_output1 = tf_model_output(
-        sentences1, smaller_hub_model, hf_tokenizer, smaller=True
-    )
-    tf_output2 = tf_model_output(
-        sentences2, smaller_hub_model, hf_tokenizer, smaller=True
-    )
+    tf_output1 = tf_model_output(sentences1, smaller_hub_model, hf_tokenizer, smaller=True)
+    tf_output2 = tf_model_output(sentences2, smaller_hub_model, hf_tokenizer, smaller=True)
 
     pt_similarity = similarity(pt_output1, pt_output2)
-    tf_similarity = similarity(
-        from_numpy(tf_output1.numpy()), from_numpy(tf_output2.numpy())
-    )
+    tf_similarity = similarity(from_numpy(tf_output1.numpy()), from_numpy(tf_output2.numpy()))
     assert allclose(pt_similarity, tf_similarity, atol=TOLERANCE)

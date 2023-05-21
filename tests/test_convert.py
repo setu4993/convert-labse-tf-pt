@@ -16,8 +16,8 @@ from convert_labse_tf_pt import (
 from .helpers import Sentences
 
 
-def test_convert_tokenizer(hub_model):
-    tokenizer = get_labse_tokenizer(hub_model)
+def test_convert_tokenizer():
+    tokenizer = get_labse_tokenizer()
     assert isinstance(tokenizer, BertTokenizerFast)
 
 
@@ -28,9 +28,7 @@ def test_convert_model(model_tokenizer):
 
 
 def test_tokenized(bert_tokenizer, hf_tokenizer):
-    tf_tokenized = bert_tokenizer.convert_tokens_to_ids(
-        bert_tokenizer.tokenize(Sentences.similar[0])
-    )
+    tf_tokenized = bert_tokenizer.convert_tokens_to_ids(bert_tokenizer.tokenize(Sentences.similar[0]))
 
     hf_tokenized = hf_tokenizer(Sentences.similar[0], add_special_tokens=False)
     assert tf_tokenized == hf_tokenized.input_ids
