@@ -251,11 +251,9 @@ def load_lealla_weights(tf_model, model: BertModel) -> BertModel:
         full_name, array = var.name, var.numpy()
         name = full_name.replace(":0", "").split("/")
 
-        # Corresponds to `do_lower_case` attribute of the model.
-        if full_name.startswith("Variable"):
-            continue
         pointer = model
         trace = []
+        skipped = False
         for i, m_name in enumerate(name):
             # All `name`s start with `student_bert` which is just a container.
             if m_name == "student_bert":
@@ -277,10 +275,15 @@ def load_lealla_weights(tf_model, model: BertModel) -> BertModel:
                 elif m_name == "position_embeddings":
                     trace.append("position_embeddings")
                     pointer = getattr(pointer, "position_embeddings")
-                # `in` because we need to match both `token_type_embeddings` and `token_type_embeddings_real`.
-                elif "token_type_embeddings" in m_name:
+                elif "token_type_embeddings" == m_name:
                     trace.append("token_type_embeddings")
                     pointer = getattr(pointer, "token_type_embeddings")
+                # Skip `token_type_embeddings_real` because they're disconnected in the TF graph.
+                # So, they're not real, despite what the name suggests.
+                elif "token_type_embeddings_real" in name:
+                    logger.warning(f"Ignored {m_name} in {full_name}.")
+                    skipped = True
+                    continue
                 else:
                     raise ValueError(f"Unknown embedding layer with name {full_name}")
                 trace.append("weight")
@@ -310,13 +313,11 @@ def load_lealla_weights(tf_model, model: BertModel) -> BertModel:
                 pointer = getattr(pointer, "weight")
             else:
                 logger.warning(f"Ignored {m_name}")
-
-        # For certain layers reshape is necessary.
+        if skipped:
+            logger.warning(f"Skipped {full_name}.")
+            continue
         trace = ".".join(trace)
-        if match(r"(\S+)\.attention\.self\.(key|value|query)\.(bias|weight)", trace) or match(
-            r"(\S+)\.attention\.output\.dense\.weight", trace
-        ):
-            array = array.reshape(pointer.data.shape)
+        # For weights, we need to transpose since TF and PyTorch store over different axes.
         if "kernel" in full_name:
             array = array.transpose()
         if pointer.shape == array.shape:
