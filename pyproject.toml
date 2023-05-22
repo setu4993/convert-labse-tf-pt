@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "convert-labse-tf-pt"
-version = "2.4.1"
+version = "2.4.2"
 description = "Convert LaBSE model from TensorFlow to PyTorch."
 license = "MIT"
 authors = ["Setu Shah <setu+labse@setu.me>"]
