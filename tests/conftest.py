@@ -2,6 +2,7 @@ from bert.tokenization.bert_tokenization import FullTokenizer
 from huggingface_hub import cached_download, hf_hub_url
 from pytest import fixture
 from transformers import BertModel, BertTokenizerFast
+from tensorflow_hub import KerasLayer
 
 from convert_labse_tf_pt import (
     MODEL_TOKENIZER,
@@ -9,7 +10,7 @@ from convert_labse_tf_pt import (
     get_labse_tokenizer,
     load_tf_model,
 )
-from convert_labse_tf_pt.configurations import LaBSE
+from convert_labse_tf_pt.configurations import LaBSE, LEALLABase, LEALLALarge, LEALLASmall
 from tests.helpers import Sentences
 
 TF_SAVED_MODEL = None
@@ -53,3 +54,29 @@ def v1_labse_model() -> BertModel:
     config_location = cached_download(hf_hub_url(repo_id="setu4993/LaBSE", revision="v1", filename="config.json"))
     model_location = cached_download(hf_hub_url(repo_id="setu4993/LaBSE", revision="v1", filename="pytorch_model.bin"))
     return BertModel.from_pretrained(model_location, config=config_location)
+
+
+@fixture(
+    scope="module",
+    params=[LEALLASmall(), LEALLABase(), LEALLALarge()],
+)
+def lealla_config(request):
+    return request.param
+
+
+@fixture
+def lealla_atol(sentences):
+    if sentences == Sentences.japanese:
+        return 0.13
+    else:
+        return TOLERANCE
+
+
+@fixture(scope="module")
+def hub_encoder(lealla_config):
+    return KerasLayer(lealla_config.tf_hub_link)
+
+
+@fixture(scope="module")
+def lealla_model_tokenizer(lealla_config) -> MODEL_TOKENIZER:
+    return convert_tf2_hub_model_to_pytorch(lealla_config)
