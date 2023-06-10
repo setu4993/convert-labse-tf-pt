@@ -123,7 +123,7 @@ datasets:
   - Wikipedia
 ---
 
-# LEALLA
+# LEALLA-large
 
 ## Model description
 
