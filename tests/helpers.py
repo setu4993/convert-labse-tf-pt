@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from tensorflow import constant as tf_constant
 
 Sentences = SimpleNamespace(
     similar=["Hi, how are you?", "Hello, how are you doing?"],
@@ -16,7 +17,7 @@ Sentences = SimpleNamespace(
 )
 
 
-def tf_model_output(sentences, hub_model, hf_tokenizer, smaller: bool = False):
+def tf_model_output_from_hub_model(sentences, hub_model, hf_tokenizer, smaller: bool = False):
     sentences = [sentences] if isinstance(sentences, str) else sentences
     tf_tokenized = hf_tokenizer(sentences, return_tensors="tf", padding="max_length")
     key = "default" if not smaller else "pooled_output"
@@ -27,3 +28,8 @@ def tf_model_output(sentences, hub_model, hf_tokenizer, smaller: bool = False):
             "input_word_ids": tf_tokenized.input_ids,
         }
     )[key]
+
+
+def tf_model_output_from_encoder(sentences, hub_encoder):
+    sentences = [sentences] if isinstance(sentences, str) else sentences
+    return hub_encoder(tf_constant(sentences))
