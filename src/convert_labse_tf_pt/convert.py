@@ -11,9 +11,11 @@ from argparse import ArgumentParser
 from pathlib import Path
 from re import match
 from typing import List, Tuple, Union
+from numpy import ndarray
+from numpy.linalg import norm
 
+from torch.nn.functional import normalize
 import tensorflow_text  # noqa: F401
-import torch.nn.functional as F
 from loguru import logger
 from tensorflow_hub import load
 from torch import from_numpy, matmul, no_grad
@@ -394,9 +396,13 @@ def get_embedding(
     return output
 
 
+def l2_normalize_numpy_array(array: ndarray) -> ndarray:
+    return array / norm(array, ord=2, axis=1).reshape(-1, 1)
+
+
 def similarity(embeddings_1, embeddings_2):
-    normalized_embeddings_1 = F.normalize(embeddings_1, p=2)
-    normalized_embeddings_2 = F.normalize(embeddings_2, p=2)
+    normalized_embeddings_1 = normalize(embeddings_1, p=2)
+    normalized_embeddings_2 = normalize(embeddings_2, p=2)
     return matmul(normalized_embeddings_1, normalized_embeddings_2.transpose(0, 1))
 
 
