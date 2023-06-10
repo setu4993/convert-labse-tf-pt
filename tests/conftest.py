@@ -1,8 +1,8 @@
 from bert.tokenization.bert_tokenization import FullTokenizer
 from huggingface_hub import cached_download, hf_hub_url
 from pytest import fixture
-from transformers import BertModel, BertTokenizerFast
 from tensorflow_hub import KerasLayer
+from transformers import BertModel, BertTokenizerFast
 
 from convert_labse_tf_pt import (
     MODEL_TOKENIZER,
@@ -10,7 +10,12 @@ from convert_labse_tf_pt import (
     get_labse_tokenizer,
     load_tf_model,
 )
-from convert_labse_tf_pt.configurations import LaBSE, LEALLABase, LEALLALarge, LEALLASmall
+from convert_labse_tf_pt.configurations import (
+    LaBSE,
+    LEALLABase,
+    LEALLALarge,
+    LEALLASmall,
+)
 from tests.helpers import Sentences
 
 TF_SAVED_MODEL = None

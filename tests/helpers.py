@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+
 from tensorflow import constant as tf_constant
 
 Sentences = SimpleNamespace(

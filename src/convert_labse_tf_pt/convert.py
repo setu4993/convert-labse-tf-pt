@@ -11,14 +11,14 @@ from argparse import ArgumentParser
 from pathlib import Path
 from re import match
 from typing import List, Tuple, Union
-from numpy import ndarray
-from numpy.linalg import norm
 
-from torch.nn.functional import normalize
 import tensorflow_text  # noqa: F401
 from loguru import logger
+from numpy import ndarray
+from numpy.linalg import norm
 from tensorflow_hub import load
 from torch import from_numpy, matmul, no_grad
+from torch.nn.functional import normalize
 from transformers import (
     BertConfig,
     BertModel,

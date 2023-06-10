@@ -1,8 +1,9 @@
-from numpy import allclose, min as np_min, abs as np_abs
+from numpy import abs as np_abs
+from numpy import allclose
+from numpy import min as np_min
 from pytest import mark
 from torch import from_numpy
 from transformers import FlaxBertModel, TFBertModel
-
 
 from convert_labse_tf_pt import (
     MODEL_TOKENIZER,
@@ -10,9 +11,7 @@ from convert_labse_tf_pt import (
     save_labse_models,
     similarity,
 )
-
 from convert_labse_tf_pt.convert import l2_normalize_numpy_array
-
 from tests.helpers import Sentences, tf_model_output_from_encoder
 
 TOLERANCE = 0.02

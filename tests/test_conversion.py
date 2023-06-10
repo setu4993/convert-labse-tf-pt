@@ -9,7 +9,6 @@ from convert_labse_tf_pt import (
     save_labse_models,
     similarity,
 )
-
 from tests.helpers import Sentences, tf_model_output_from_hub_model
 
 TOLERANCE = 0.01
