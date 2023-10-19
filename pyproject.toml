@@ -12,12 +12,11 @@ packages = [{ include = "convert_labse_tf_pt", from = "src" }]
 include = ["LICENSE"]
 
 [tool.poetry.dependencies]
-python = "^3.8,<3.11"
+python = "^3.9,<3.11"
 transformers = { extras = ["flax", "sentencepiece", "torch", "tf"], version = "^4.34.1" }
-tensorflow-hub = "^0.12.0"
+tensorflow-hub = "^0.15.0"
 ipywidgets = "^7.6.3"
 loguru = "^0.6.0"
-tensorflow-text = "*"
 protobuf = "<4.0.0"
 safetensors = "^0.3.1"
 
