@@ -212,12 +212,18 @@ Details about data, training, evaluation and performance metrics are available i
 ### BibTeX entry and citation info
 
 ```bibtex
-@misc{mao2023lealla,
-      title={LEALLA: Learning Lightweight Language-agnostic Sentence Embeddings with Knowledge Distillation},
-      author={Zhuoyuan Mao and Tetsuji Nakagawa},
-      year={2023},
-      eprint={2302.08387},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL}
+@inproceedings{mao-nakagawa-2023-lealla,
+    title = "{LEALLA}: Learning Lightweight Language-agnostic Sentence Embeddings with Knowledge Distillation",
+    author = "Mao, Zhuoyuan  and
+      Nakagawa, Tetsuji",
+    booktitle = "Proceedings of the 17th Conference of the European Chapter of the Association for Computational Linguistics",
+    month = may,
+    year = "2023",
+    address = "Dubrovnik, Croatia",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2023.eacl-main.138",
+    doi = "10.18653/v1/2023.eacl-main.138",
+    pages = "1886--1894",
+    abstract = "Large-scale language-agnostic sentence embedding models such as LaBSE (Feng et al., 2022) obtain state-of-the-art performance for parallel sentence alignment. However, these large-scale models can suffer from inference speed and computation overhead. This study systematically explores learning language-agnostic sentence embeddings with lightweight models. We demonstrate that a thin-deep encoder can construct robust low-dimensional sentence embeddings for 109 languages. With our proposed distillation methods, we achieve further improvements by incorporating knowledge from a teacher model. Empirical results on Tatoeba, United Nations, and BUCC show the effectiveness of our lightweight models. We release our lightweight language-agnostic sentence embedding models LEALLA on TensorFlow Hub.",
 }
 ```
