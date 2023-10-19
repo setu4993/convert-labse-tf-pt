@@ -1,4 +1,5 @@
 ---
+pipeline_tag: sentence-similarity
 language:
   - af
   - am
