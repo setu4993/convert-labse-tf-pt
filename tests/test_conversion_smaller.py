@@ -24,7 +24,7 @@ def smaller_hub_model():
 
 @fixture(scope="session")
 def smaller_model_tokenizer() -> MODEL_TOKENIZER:
-    return convert_tf2_hub_model_to_pytorch(tf_saved_model=None, smaller=True)
+    return convert_tf2_hub_model_to_pytorch(SmallerLaBSE(), tf_saved_model=None)
 
 
 def test_embeddings_converted_model(
