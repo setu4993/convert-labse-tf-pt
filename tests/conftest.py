@@ -1,5 +1,4 @@
 from bert.tokenization.bert_tokenization import FullTokenizer
-from huggingface_hub import cached_download, hf_hub_url
 from pytest import fixture
 from tensorflow_hub import KerasLayer
 from transformers import BertModel, BertTokenizerFast
@@ -56,9 +55,7 @@ def sentences(request):
 
 @fixture(scope="session")
 def v1_labse_model() -> BertModel:
-    config_location = cached_download(hf_hub_url(repo_id="setu4993/LaBSE", revision="v1", filename="config.json"))
-    model_location = cached_download(hf_hub_url(repo_id="setu4993/LaBSE", revision="v1", filename="pytorch_model.bin"))
-    return BertModel.from_pretrained(model_location, config=config_location)
+    return BertModel.from_pretrained("setu4993/LaBSE", revision="v1")
 
 
 @fixture(
@@ -74,7 +71,7 @@ def lealla_atol(sentences):
     if sentences == Sentences.japanese:
         return 0.13
     else:
-        return TOLERANCE
+        return 0.02
 
 
 @fixture(scope="module")
