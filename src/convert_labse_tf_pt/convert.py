@@ -94,13 +94,13 @@ def save_labse_models(
 
     if save_safe_tensor:
         logger.info(f"Loading HuggingFace compatible PyTorch LaBSE model from {pt_output_path}.")
-        pt_output_path = output_path.joinpath("pt_safe") if not huggingface_path else output_path
+        pt_safe_output_path = output_path.joinpath("pt_safe") if not huggingface_path else output_path
         pt_model = BertModel.from_pretrained(pt_output_path)
         for parameter in pt_model.parameters():
             parameter = parameter.contiguous()
-        pt_model.save_pretrained(pt_output_path, safe_serialization=True)
+        pt_model.save_pretrained(pt_safe_output_path, safe_serialization=True)
         del pt_model
-        logger.info(f"Saved PyTorch `safetensors` model to {pt_output_path}.")
+        logger.info(f"Saved PyTorch `safetensors` model to {pt_safe_output_path}.")
 
     if save_tf:
         tf_output_path = output_path.joinpath("tf") if not huggingface_path else output_path
