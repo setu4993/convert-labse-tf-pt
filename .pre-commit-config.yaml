@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.2.0
+    rev: v4.5.0
     hooks:
       - id: check-added-large-files
         exclude: src/convert_labse_tf_pt/data/smaller_vocab/vocab-en-fr-es-de-zh-ar-zh_classical-it-ja-ko-nl-pl-pt-th-tr-ru.txt
@@ -12,16 +12,16 @@ repos:
       - id: requirements-txt-fixer
       - id: trailing-whitespace
   - repo: https://github.com/ambv/black
-    rev: 20.8b1
+    rev: 23.10.1
     hooks:
       - id: black
-        language_version: python3.7
+        language_version: python3.9
   - repo: https://github.com/pycqa/isort
-    rev: 5.7.0
+    rev: 5.12.0
     hooks:
       - id: isort
   - repo: https://github.com/myint/docformatter/
-    rev: v1.3.1
+    rev: v1.7.5
     hooks:
       - id: docformatter
         args:
