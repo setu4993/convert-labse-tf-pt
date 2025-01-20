@@ -1,6 +1,4 @@
-from numpy import abs as np_abs
 from numpy import allclose
-from numpy import min as np_min
 from pytest import mark
 from torch import from_numpy
 from transformers import FlaxBertModel, TFBertModel

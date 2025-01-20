@@ -13,7 +13,12 @@ include = ["LICENSE"]
 
 [tool.poetry.dependencies]
 python = "^3.9,<3.11"
-transformers = { extras = ["flax", "sentencepiece", "torch", "tf"], version = "^4.34.1" }
+transformers = { extras = [
+    "flax",
+    "sentencepiece",
+    "torch",
+    "tf",
+], version = "^4.34.1" }
 tensorflow-hub = "^0.15.0"
 ipywidgets = "^7.6.3"
 loguru = "^0.6.0"
@@ -36,11 +41,27 @@ ipython = "^8.7.0"
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.black]
+[tool.ruff]
 line-length = 120
+fix = true
+unsafe-fixes = true
+src = ["src"]
 
-[tool.isort]
-profile = "black"
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "ASYNC"]
+ignore = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["galileo_core"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.docformatter]
+style = "numpy"
+recursive = true
+wrap-summaries = 120
+wrap-descriptions = 120
 
 [tool.pytest.ini_options]
 pythonpath = ["./src/"]

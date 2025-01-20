@@ -1,6 +1,5 @@
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Dict
 
 
 @dataclass
@@ -23,7 +22,7 @@ class LaBSE:
     size: str = "base"
     tf_hub_link: str = "https://tfhub.dev/google/LaBSE/2"
 
-    def dict(self) -> Dict[str, int]:
+    def dict(self) -> dict[str, int]:
         dct = asdict(self)
         # Drop fields that are not supported by `BertConfig`.
         dct.pop("repo")

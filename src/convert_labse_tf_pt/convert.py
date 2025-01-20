@@ -7,10 +7,11 @@ be imported with Huggingface/transformer.
 
 This script is adapted from HuggingFace's BERT conversion script: https://github.com/huggingface/transformers/blob/master/src/transformers/models/bert/convert_bert_original_tf2_checkpoint_to_pytorch.py
 """
+
 from argparse import ArgumentParser
 from pathlib import Path
 from re import match
-from typing import List, Tuple, Union
+from typing import Union
 
 import tensorflow_text  # noqa: F401
 from loguru import logger
@@ -38,7 +39,7 @@ from convert_labse_tf_pt.configurations import (
 )
 
 PATH = Union[str, Path]
-MODEL_TOKENIZER = Tuple[BertModel, BertTokenizerFast]
+MODEL_TOKENIZER = tuple[BertModel, BertTokenizerFast]
 
 
 def load_tf_model(tf_saved_model: PATH = LaBSE().tf_hub_link):
@@ -374,7 +375,7 @@ def convert_tf2_hub_model_to_pytorch(
 
 
 def get_embedding(
-    sentences: Union[str, List[str]],
+    sentences: Union[str, list[str]],
     model: BertModel = None,
     tokenizer: BertTokenizerFast = None,
 ) -> BaseModelOutputWithPoolingAndCrossAttentions:
