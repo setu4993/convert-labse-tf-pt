@@ -22,7 +22,7 @@ transformers = { extras = [
 tensorflow-hub = "^0.15.0"
 ipywidgets = "^7.6.3"
 loguru = "^0.6.0"
-protobuf = "<4.0.0"
+protobuf = "<5.0.0"
 safetensors = "^0.3.1"
 
 [tool.poetry.scripts]
